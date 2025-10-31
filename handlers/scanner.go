@@ -10,6 +10,7 @@ import (
 	"net/url"
 	"scanner/config"
 	"scanner/services"
+	"strings"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
@@ -59,6 +60,9 @@ func (h *ScanHandler) Scan(c *fiber.Ctx) error {
 	// convert image to base64
 	base64Image := []byte(base64.StdEncoding.EncodeToString(imageBytes))
 	// send image to ocr api
+
+	// should remove data:image/jpeg;base64,
+	base64Image = []byte(strings.ReplaceAll(string(base64Image), "data:image/jpeg;base64,", ""))
 	ocrApi := config.GetConfig().OCRConfig.APIURL
 	// add proxy to ocr api
 	proxyUrl, err := url.Parse(config.GetConfig().ServerConfig.Proxy)
