@@ -14,6 +14,6 @@ docker rm scanner_server || true
 # Start a new container from the scanner_server image
 # Runs in detached mode (-d) and restart if stoped, within the 'mrt' network
 docker run --restart=always -d --network=mrt --name scanner_server \
--v $(pwd)/vectors.json:/app/vectors.json \
+-v $(pwd)/vectors:/app/vectors \
 -v $(pwd)/files:/app/files \
 scanner_server
