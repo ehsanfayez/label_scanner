@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/base64"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"net/url"
@@ -85,6 +86,7 @@ func (h *ScanHandler) Scan(c *fiber.Ctx) error {
 
 	resp, err := httpClient.Post(ocrApi, "application/json", bytes.NewBuffer(dataBytes))
 	if err != nil {
+		fmt.Println("Failed to scan image", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": "Failed to scan image",
 		})
