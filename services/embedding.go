@@ -7,6 +7,7 @@ import (
 	"math"
 	"os"
 	"scanner/config"
+	"sync"
 
 	"github.com/sashabaranov/go-openai"
 )
@@ -34,6 +35,7 @@ var words = []string{
 type EmbeddingService struct {
 	vectorsData  map[string][]float32
 	OpenAiClient *openai.Client
+	mu           *sync.Mutex
 }
 
 func NewEmbeddingService() *EmbeddingService {
@@ -42,6 +44,7 @@ func NewEmbeddingService() *EmbeddingService {
 	return &EmbeddingService{
 		vectorsData:  vectorsData,
 		OpenAiClient: openAiClient,
+		mu:           &sync.Mutex{},
 	}
 }
 
@@ -95,6 +98,8 @@ func (p *EmbeddingService) GetEmbedding(text string) ([]float32, error) {
 		return nil, err
 	}
 
+	p.mu.Lock()
+	defer p.mu.Unlock()
 	os.WriteFile(config.GetConfig().EmbeddingConfig.VectorsFile, jsonData, 0644)
 	return embed, nil
 }
