@@ -2,13 +2,13 @@ package handlers
 
 import (
 	"bytes"
-	"department/label_scanner/config"
-	"department/label_scanner/services"
 	"encoding/base64"
 	"encoding/json"
 	"io"
 	"net/http"
 	"net/url"
+	"scanner/config"
+	"scanner/services"
 	"time"
 
 	"github.com/gofiber/fiber/v2"

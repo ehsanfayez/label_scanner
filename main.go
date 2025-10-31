@@ -1,9 +1,9 @@
 package main
 
 import (
-	"department/label_scanner/config"
-	"department/label_scanner/handlers"
 	"log"
+	"scanner/config"
+	"scanner/handlers"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"

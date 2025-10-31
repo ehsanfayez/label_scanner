@@ -1,8 +1,8 @@
 package handlers
 
 import (
-	"department/label_scanner/config"
-	"department/label_scanner/utils"
+	"scanner/config"
+	"scanner/utils"
 
 	"github.com/gofiber/fiber/v2"
 )

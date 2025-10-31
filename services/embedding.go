@@ -2,11 +2,11 @@ package services
 
 import (
 	"context"
-	"department/label_scanner/config"
 	"encoding/json"
 	"log"
 	"math"
 	"os"
+	"scanner/config"
 
 	"github.com/sashabaranov/go-openai"
 )
