@@ -26,11 +26,9 @@ var FieldKeys = []string{
 	"part_number",
 	"battery",
 	"adapter",
-	"ram_capacity_size",
+	"rams",
 	"screen_size_inches",
-	"hdd_capacity",
-	"hdd_type",
-	"ram_type",
+	"hdds",
 	"cpu_speed",
 	"gpu_model",
 	"cam",
@@ -47,22 +45,44 @@ var Fields = map[string]string{
 	"part_number":        "Part Number",
 	"battery":            "Battery",
 	"adapter":            "Adapter",
-	"ram_capacity_size":  "RAM Capacity Size",
+	"rams":               "RAM Full",
 	"screen_size_inches": "Screen Size Inches",
-	"hdd_capacity":       "HDD Capacity",
-	"hdd_type":           "HDD Type",
-	"ram_type":           "RAM Type",
+	"hdds":               "HDD Full",
 	"cpu_speed":          "CPU Speed",
 	"gpu_model":          "GPU Model",
 	"cam":                "Cam",
 }
 
+type Data struct {
+	JobNumber        string    `json:"job_number"`
+	Type             string    `json:"type"`
+	Make             string    `json:"make"`
+	Model            string    `json:"model"`
+	CPUModel         string    `json:"cpu_model"`
+	CPUSeries        string    `json:"cpu_series"`
+	HDDs             []Storage `json:"hdds"`
+	RAMs             []Storage `json:"rams"`
+	ScreenSizeInches string    `json:"screen_size_inches"`
+	CPUSpeed         string    `json:"cpu_speed"`
+	GPUModel         string    `json:"gpu_model"`
+	Cam              string    `json:"cam"`
+	SerialNumber     string    `json:"serial_number"`
+	PartNumber       string    `json:"part_number"`
+	Battery          string    `json:"battery"`
+	Adapter          string    `json:"adapter"`
+}
+
+type Storage struct {
+	Capacity string `json:"capacity"`
+	Type     string `json:"type"`
+	Unit     string `json:"unit"`
+}
+
 func (h *DataHandler) Done(c *fiber.Ctx) error {
-	data := make([]map[string]interface{}, 0)
+	data := []Data{}
 	if err := c.BodyParser(&data); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error":   "Failed to parse body",
-			"message": err.Error(),
+			"error": "Failed to parse body",
 		})
 	}
 
@@ -81,11 +101,8 @@ func (h *DataHandler) Done(c *fiber.Ctx) error {
 	for _, row := range data {
 		rowData := make([]interface{}, 0)
 		for _, key := range FieldKeys {
-			if val, ok := row[key]; ok {
-				rowData = append(rowData, val)
-			} else {
-				rowData = append(rowData, "")
-			}
+			val := getFieldValue(row, key)
+			rowData = append(rowData, val)
 		}
 
 		excelData.SetSheetRow("Sheet1", fmt.Sprintf("A%d", rowNum), &rowData)
@@ -106,4 +123,59 @@ func (h *DataHandler) Done(c *fiber.Ctx) error {
 		"message": "Data added successfully",
 		"link":    "files/" + name,
 	})
+}
+
+func getFieldValue(data Data, key string) interface{} {
+	switch key {
+	case "job_number":
+		return data.JobNumber
+	case "type":
+		return data.Type
+	case "make":
+		return data.Make
+	case "model":
+		return data.Model
+	case "cpu_model":
+		return data.CPUModel
+	case "cpu_series":
+		return data.CPUSeries
+	case "serial_number":
+		return data.SerialNumber
+	case "part_number":
+		return data.PartNumber
+	case "battery":
+		return data.Battery
+	case "adapter":
+		return data.Adapter
+	case "screen_size_inches":
+		return data.ScreenSizeInches
+	case "rams":
+		formattedRAMs := ""
+		for i, ram := range data.RAMs {
+			formattedRAMs += fmt.Sprintf("%s%s", ram.Capacity, ram.Unit)
+			if i < len(data.RAMs)-1 {
+				formattedRAMs += ":::"
+			}
+		}
+
+		return formattedRAMs
+	case "hdds":
+		formattedHDDs := ""
+		for i, hdd := range data.HDDs {
+			formattedHDDs += fmt.Sprintf("%s%s %s", hdd.Capacity, hdd.Unit, hdd.Type)
+			if i < len(data.HDDs)-1 {
+				formattedHDDs += ":::"
+			}
+		}
+
+		return formattedHDDs
+	case "cpu_speed":
+		return data.CPUSpeed
+	case "gpu_model":
+		return data.GPUModel
+	case "cam":
+		return data.Cam
+	default:
+		return ""
+	}
 }
