@@ -82,7 +82,9 @@ func (h *DataHandler) Done(c *fiber.Ctx) error {
 	data := []Data{}
 	if err := c.BodyParser(&data); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "Failed to parse body",
+			"error":   "Failed to parse body",
+			"message": err.Error(),
+			"body":    string(c.Body()),
 		})
 	}
 
@@ -152,7 +154,7 @@ func getFieldValue(data Data, key string) interface{} {
 	case "rams":
 		formattedRAMs := ""
 		for i, ram := range data.RAMs {
-			formattedRAMs += fmt.Sprintf("%s%s", ram.Capacity, ram.Unit)
+			formattedRAMs += fmt.Sprintf("%s%s %s", ram.Capacity, ram.Unit, ram.Type)
 			if i < len(data.RAMs)-1 {
 				formattedRAMs += ":::"
 			}
