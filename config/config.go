@@ -17,9 +17,10 @@ type Config struct {
 }
 
 type ServerConfig struct {
-	App   string
-	Port  string
-	Proxy string
+	App     string
+	Port    string
+	Proxy   string
+	BaseUrl string
 }
 
 type AuthConfig struct {
@@ -53,9 +54,10 @@ func InitConfig() *Config {
 		}
 
 		server := &ServerConfig{
-			App:   viper.GetString("APP"),
-			Port:  viper.GetString("PORT"),
-			Proxy: viper.GetString("PROXY_URL"),
+			App:     viper.GetString("APP"),
+			Port:    viper.GetString("PORT"),
+			Proxy:   viper.GetString("PROXY_URL"),
+			BaseUrl: viper.GetString("BASE_URL"),
 		}
 
 		auth := &AuthConfig{
