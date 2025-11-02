@@ -95,7 +95,6 @@ func (h *ScanHandler) Scan(c *fiber.Ctx) error {
 		})
 	}
 
-	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set(config.GetConfig().OCRConfig.APIHeader, config.GetConfig().OCRConfig.APIKey)
 	fmt.Println(req.Header)
 	fmt.Println(config.GetConfig().OCRConfig.APIHeader)
