@@ -88,7 +88,17 @@ func (h *ScanHandler) Scan(c *fiber.Ctx) error {
 		})
 	}
 
-	resp, err := httpClient.Post(ocrApi, "application/json", bytes.NewBuffer(dataBytes))
+	req, err := http.NewRequest("POST", ocrApi, bytes.NewBuffer(dataBytes))
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "Failed to create request",
+		})
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set(config.GetConfig().OCRConfig.APIHeader, config.GetConfig().OCRConfig.APIKey)
+
+	resp, err := httpClient.Do(req)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": "Failed to scan image",

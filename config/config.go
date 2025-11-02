@@ -31,7 +31,9 @@ type AuthConfig struct {
 }
 
 type OCRConfig struct {
-	APIURL string
+	APIURL    string
+	APIKey    string
+	APIHeader string
 }
 
 type EmbeddingConfig struct {
