@@ -100,6 +100,7 @@ func (h *ScanHandler) Scan(c *fiber.Ctx) error {
 
 	resp, err := httpClient.Do(req)
 	if err != nil {
+		fmt.Println(err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": "Failed to scan image",
 		})
