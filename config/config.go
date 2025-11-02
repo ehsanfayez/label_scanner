@@ -70,7 +70,9 @@ func InitConfig() *Config {
 		}
 
 		ocr := &OCRConfig{
-			APIURL: viper.GetString("OCR_API_URL"),
+			APIURL:    viper.GetString("OCR_API_URL"),
+			APIKey:    viper.GetString("OCR_API_KEY"),
+			APIHeader: viper.GetString("OCR_API_HEADER"),
 		}
 
 		embedding := &EmbeddingConfig{
