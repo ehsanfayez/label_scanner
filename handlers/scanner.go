@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"net/url"
 	"scanner/config"
 	"scanner/services"
 	"strings"
@@ -64,16 +63,16 @@ func (h *ScanHandler) Scan(c *fiber.Ctx) error {
 	base64Image = strings.ReplaceAll(string(base64Image), "data:image/jpeg;base64,", "")
 	ocrApi := config.GetConfig().OCRConfig.APIURL
 	// add proxy to ocr api
-	proxyUrl, err := url.Parse(config.GetConfig().ServerConfig.Proxy)
-	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error": "Failed to parse proxy url",
-		})
-	}
+	// proxyUrl, err := url.Parse(config.GetConfig().ServerConfig.Proxy)
+	// if err != nil {
+	// 	return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+	// 		"error": "Failed to parse proxy url",
+	// 	})
+	// }
 
 	httpClient := &http.Client{
-		Transport: &http.Transport{Proxy: http.ProxyURL(proxyUrl)},
-		Timeout:   30 * time.Second,
+		// Transport: &http.Transport{Proxy: http.ProxyURL(proxyUrl)},
+		Timeout: 30 * time.Second,
 	}
 
 	data := map[string]interface{}{
