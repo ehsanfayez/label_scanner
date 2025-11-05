@@ -267,6 +267,10 @@ func (h *ScanHandler) ScanType(c *fiber.Ctx) error {
 			}
 		}
 
+		if dat, ok := ocrResponse.Data["type"]; ok {
+			ocrResponse.Data["type"] = strings.ToUpper(dat)
+		}
+
 		if key == "brand" {
 			ocrResponse.Data["make"] = value
 			continue
