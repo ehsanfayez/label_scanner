@@ -254,15 +254,15 @@ func (h *ScanHandler) ScanType(c *fiber.Ctx) error {
 			continue
 		}
 
-		if value, ok := ocrResponse.Data["capacity"]; ok {
-			value = strings.ToUpper(value)
-			if strings.Contains(value, "GB") {
-				ocrResponse.Data["capacity"] = strings.TrimSpace(strings.ReplaceAll(value, "GB", ""))
+		if dat, ok := ocrResponse.Data["capacity"]; ok {
+			dat = strings.ToUpper(dat)
+			if strings.Contains(dat, "GB") {
+				ocrResponse.Data["capacity"] = strings.TrimSpace(strings.ReplaceAll(dat, "GB", ""))
 				ocrResponse.Data["unit"] = "GB"
 			}
 
-			if strings.Contains(value, "TB") {
-				ocrResponse.Data["capacity"] = strings.TrimSpace(strings.ReplaceAll(value, "TB", ""))
+			if strings.Contains(dat, "TB") {
+				ocrResponse.Data["capacity"] = strings.TrimSpace(strings.ReplaceAll(dat, "TB", ""))
 				ocrResponse.Data["unit"] = "TB"
 			}
 		}
