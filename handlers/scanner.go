@@ -13,7 +13,6 @@ import (
 	"time"
 
 	"github.com/gofiber/fiber/v2"
-	"github.com/google/uuid"
 )
 
 type ScanHandler struct {
@@ -146,15 +145,6 @@ func (h *ScanHandler) ScanType(c *fiber.Ctx) error {
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"error": "Failed to get image",
-		})
-	}
-
-	// save image to disk
-	filePath := "./files/" + uuid.New().String() + file.Filename
-	err = c.SaveFile(file, filePath)
-	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error": "Failed to save image",
 		})
 	}
 
