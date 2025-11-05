@@ -250,9 +250,6 @@ func (h *ScanHandler) ScanType(c *fiber.Ctx) error {
 
 	for key, value := range ocrResponse.Data {
 		relatedWord := h.EmbeddingService.FindRelatedType(key)
-		if relatedWord == "" {
-			continue
-		}
 
 		if dat, ok := ocrResponse.Data["capacity"]; ok {
 			dat = strings.ToUpper(dat)
@@ -273,6 +270,10 @@ func (h *ScanHandler) ScanType(c *fiber.Ctx) error {
 
 		if key == "brand" {
 			ocrResponse.Data["make"] = value
+			continue
+		}
+
+		if relatedWord == "" {
 			continue
 		}
 
