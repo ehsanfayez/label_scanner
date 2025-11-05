@@ -122,6 +122,8 @@ func main() {
 	scanHandler := handlers.NewScanHandler()
 	app.Post("/api/scan", scanHandler.Scan)
 
+	app.Post("/api/scan_type", scanHandler.ScanType)
+
 	dataHandler := handlers.NewDataHandler()
 	app.Post("/api/done", dataHandler.Done)
 
