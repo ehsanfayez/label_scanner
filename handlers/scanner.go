@@ -72,7 +72,7 @@ func (h *ScanHandler) Scan(c *fiber.Ctx) error {
 
 	httpClient := &http.Client{
 		// Transport: &http.Transport{Proxy: http.ProxyURL(proxyUrl)},
-		Timeout: 30 * time.Second,
+		Timeout: 120 * time.Second,
 	}
 
 	data := map[string]interface{}{
@@ -197,7 +197,7 @@ func (h *ScanHandler) ScanType(c *fiber.Ctx) error {
 
 	httpClient := &http.Client{
 		// Transport: &http.Transport{Proxy: http.ProxyURL(proxyUrl)},
-		Timeout: 30 * time.Second,
+		Timeout: 120 * time.Second,
 	}
 
 	data := map[string]interface{}{
