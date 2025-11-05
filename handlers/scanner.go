@@ -61,7 +61,7 @@ func (h *ScanHandler) Scan(c *fiber.Ctx) error {
 	// send image to ocr api
 	// should remove data:image/jpeg;base64,
 	base64Image = strings.ReplaceAll(string(base64Image), "data:image/jpeg;base64,", "")
-	ocrApi := config.GetConfig().OCRConfig.APIURL
+	ocrApi := config.GetConfig().OCRConfig.APIURL + "/scan"
 	// add proxy to ocr api
 	// proxyUrl, err := url.Parse(config.GetConfig().ServerConfig.Proxy)
 	// if err != nil {
@@ -186,7 +186,7 @@ func (h *ScanHandler) ScanType(c *fiber.Ctx) error {
 	// send image to ocr api
 	// should remove data:image/jpeg;base64,
 	base64Image = strings.ReplaceAll(string(base64Image), "data:image/jpeg;base64,", "")
-	ocrApi := config.GetConfig().OCRConfig.APIURL
+	ocrApi := config.GetConfig().OCRConfig.APIURL + "/scan_type"
 	// add proxy to ocr api
 	// proxyUrl, err := url.Parse(config.GetConfig().ServerConfig.Proxy)
 	// if err != nil {
