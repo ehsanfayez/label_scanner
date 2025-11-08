@@ -124,7 +124,7 @@ func main() {
 	})
 
 	scanHandler := handlers.NewScanHandler()
-	app.Post("/api/scan", middlewares.IPMiddleware, scanHandler.Scan)
+	app.Post("/api/scan", scanHandler.Scan)
 
 	app.Post("/api/scan_type", scanHandler.ScanType)
 
