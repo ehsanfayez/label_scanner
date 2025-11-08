@@ -1,6 +1,7 @@
 package middlewares
 
 import (
+	"fmt"
 	"scanner/config"
 	"scanner/internal/utils"
 	"slices"
@@ -27,6 +28,7 @@ func IPMiddleware(c *fiber.Ctx) error {
 	ip := c.IP()
 	allowedIPs := config.GetConfig().OCRConfig.IPs
 	ips := strings.Split(ip, ",")
+	fmt.Println(ips, allowedIPs)
 	for _, ip := range ips {
 		if slices.Contains(allowedIPs, strings.TrimSpace(ip)) {
 			return c.Next()
