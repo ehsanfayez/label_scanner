@@ -19,6 +19,7 @@ func (h *ScanHandler) Scan(c *fiber.Ctx) error {
 	// get image from user
 	form, err := c.MultipartForm()
 	if err != nil {
+		fmt.Println(err)
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"error": "Failed to get image",
 		})
