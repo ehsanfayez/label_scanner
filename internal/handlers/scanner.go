@@ -21,7 +21,7 @@ func (h *ScanHandler) Scan(c *fiber.Ctx) error {
 	contentType := c.Get("Content-Type")
 	fmt.Printf("Received Content-Type: '%s'\n", contentType)
 	fmt.Printf("All headers: %v\n", c.GetReqHeaders())
-	
+
 	if contentType == "" || !strings.HasPrefix(strings.ToLower(contentType), "multipart/form-data") {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"error":        "Content-Type must be multipart/form-data",
@@ -63,7 +63,7 @@ func (h *ScanHandler) ScanType(c *fiber.Ctx) error {
 	contentType := c.Get("Content-Type")
 	fmt.Printf("Received Content-Type: '%s'\n", contentType)
 	fmt.Printf("All headers: %v\n", c.GetReqHeaders())
-	
+
 	if contentType == "" || !strings.HasPrefix(strings.ToLower(contentType), "multipart/form-data") {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"error":        "Content-Type must be multipart/form-data",
