@@ -2,7 +2,7 @@ package handlers
 
 import (
 	"scanner/config"
-	"scanner/utils"
+	"scanner/internal/utils"
 
 	"github.com/gofiber/fiber/v2"
 )

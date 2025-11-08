@@ -1,10 +1,11 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"scanner/config"
-	"scanner/handlers"
-	"scanner/middlewares"
+	"scanner/internal/handlers"
+	"scanner/internal/middlewares"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
@@ -90,7 +91,12 @@ var hards = []string{
 
 func main() {
 	config := config.InitConfig()
-	app := fiber.New()
+	app := fiber.New(fiber.Config{
+		ProxyHeader: "X-Forwarded-For",
+	})
+
+	fmt.Println(config.OCRConfig.IPs, len(config.OCRConfig.IPs))
+
 	pasetoMiddleware := middlewares.PasetoMiddleware(config.AuthConfig.PrivateKeySeed)
 	_ = pasetoMiddleware
 

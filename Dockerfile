@@ -33,9 +33,7 @@ COPY --from=builder /app/scanner .
 COPY --from=builder /app/.env .env
 
 RUN mkdir -p files \
-    && mkdir -p vectors \
-    && chmod -R 777 files/ \
-    && chmod -R 777 vectors/ 
+    && chmod -R 777 files/ 
 
 # Command to run the Go application
 CMD ["./scanner"]

@@ -34,6 +34,7 @@ type OCRConfig struct {
 	APIURL    string
 	APIKey    string
 	APIHeader string
+	IPs       []string
 }
 
 type EmbeddingConfig struct {
@@ -73,6 +74,7 @@ func InitConfig() *Config {
 			APIURL:    viper.GetString("OCR_API_URL"),
 			APIKey:    viper.GetString("OCR_API_KEY"),
 			APIHeader: viper.GetString("OCR_API_HEADER"),
+			IPs:       viper.GetStringSlice("OCR_IPS"),
 		}
 
 		embedding := &EmbeddingConfig{
