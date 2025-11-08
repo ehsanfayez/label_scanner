@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"scanner/config"
 	"scanner/internal/handlers"
@@ -95,8 +94,6 @@ func main() {
 		ProxyHeader: "X-Forwarded-For",
 	})
 
-	fmt.Println(config.OCRConfig.IPs, len(config.OCRConfig.IPs))
-
 	pasetoMiddleware := middlewares.PasetoMiddleware(config.AuthConfig.PrivateKeySeed)
 	_ = pasetoMiddleware
 
@@ -126,7 +123,7 @@ func main() {
 	})
 
 	scanHandler := handlers.NewScanHandler()
-	app.Post("/api/scan", scanHandler.Scan)
+	app.Post("/api/scan", middlewares.IPMiddleware, scanHandler.Scan)
 
 	app.Post("/api/scan_type", scanHandler.ScanType)
 

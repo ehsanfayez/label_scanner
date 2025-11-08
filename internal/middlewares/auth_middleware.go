@@ -1,6 +1,7 @@
 package middlewares
 
 import (
+	"fmt"
 	"scanner/config"
 	"scanner/internal/utils"
 	"slices"
@@ -25,6 +26,7 @@ func PasetoMiddleware(privateKeySeed string) func(*fiber.Ctx) error {
 func IPMiddleware(c *fiber.Ctx) error {
 	ip := c.IP()
 	allowedIPs := config.GetConfig().OCRConfig.IPs
+	fmt.Println(ip, allowedIPs)
 	if len(allowedIPs) > 0 && !slices.Contains(allowedIPs, ip) {
 		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
 			"message": "Forbidden",

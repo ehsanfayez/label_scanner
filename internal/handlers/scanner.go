@@ -30,12 +30,7 @@ func (h *ScanHandler) Scan(c *fiber.Ctx) error {
 		})
 	}
 
-	ImageType := c.FormValue("type")
-	if ImageType == "" {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "Image type is required",
-		})
-	}
+	ImageType := "hard"
 
 	ocrResponse, err := h.ScanService.Scan(ImageType, files, "")
 	if err != nil {
