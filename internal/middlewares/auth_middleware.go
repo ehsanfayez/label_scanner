@@ -1,10 +1,10 @@
 package middlewares
 
 import (
-	"fmt"
 	"scanner/config"
 	"scanner/internal/utils"
 	"slices"
+	"strings"
 
 	pasetoware "github.com/gofiber/contrib/paseto"
 	"github.com/gofiber/fiber/v2"
@@ -26,12 +26,14 @@ func PasetoMiddleware(privateKeySeed string) func(*fiber.Ctx) error {
 func IPMiddleware(c *fiber.Ctx) error {
 	ip := c.IP()
 	allowedIPs := config.GetConfig().OCRConfig.IPs
-	fmt.Println(ip, allowedIPs)
-	if len(allowedIPs) > 0 && !slices.Contains(allowedIPs, ip) {
-		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
-			"message": "Forbidden",
-		})
+	ips := strings.Split(ip, ",")
+	for _, ip := range ips {
+		if slices.Contains(allowedIPs, strings.TrimSpace(ip)) {
+			return c.Next()
+		}
 	}
 
-	return c.Next()
+	return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
+		"message": "Forbidden",
+	})
 }
