@@ -92,6 +92,7 @@ func main() {
 	config := config.InitConfig()
 	app := fiber.New(fiber.Config{
 		ProxyHeader: "X-Forwarded-For",
+		BodyLimit:   200 * 1024 * 1024, // 100 MB for large file uploads
 	})
 
 	pasetoMiddleware := middlewares.PasetoMiddleware(config.AuthConfig.PrivateKeySeed)

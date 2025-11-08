@@ -3,6 +3,7 @@ package handlers
 import (
 	"fmt"
 	"scanner/internal/services"
+	"strings"
 
 	"github.com/gofiber/fiber/v2"
 )
@@ -16,16 +17,24 @@ func NewScanHandler() *ScanHandler {
 }
 
 func (h *ScanHandler) Scan(c *fiber.Ctx) error {
-	// get image from user
-	form, err := c.MultipartForm()
-	if err != nil {
-		fmt.Println(err)
+	// Check Content-Type header
+	contentType := c.Get("Content-Type")
+	if contentType == "" || !strings.HasPrefix(strings.ToLower(contentType), "multipart/form-data") {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "Failed to get image",
+			"error": "Content-Type must be multipart/form-data",
 		})
 	}
 
-	files := form.File["image"]
+	// get image from user
+	form, err := c.MultipartForm()
+	if err != nil {
+		fmt.Println("Multipart form error:", err)
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": fmt.Sprintf("Failed to parse multipart form: %v", err),
+		})
+	}
+
+	files := form.File["images"]
 	if len(files) == 0 {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"error": "No images provided",
@@ -45,16 +54,24 @@ func (h *ScanHandler) Scan(c *fiber.Ctx) error {
 }
 
 func (h *ScanHandler) ScanType(c *fiber.Ctx) error {
-	// get image from user
-	form, err := c.MultipartForm()
-	if err != nil {
-		fmt.Println(err)
+	// Check Content-Type header
+	contentType := c.Get("Content-Type")
+	if contentType == "" || !strings.HasPrefix(strings.ToLower(contentType), "multipart/form-data") {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "Failed to get image",
+			"error": "Content-Type must be multipart/form-data",
 		})
 	}
 
-	files := form.File["image"]
+	// get image from user
+	form, err := c.MultipartForm()
+	if err != nil {
+		fmt.Println("Multipart form error:", err)
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": fmt.Sprintf("Failed to parse multipart form: %v", err),
+		})
+	}
+
+	files := form.File["images"]
 	if len(files) == 0 {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"error": "No images provided",
