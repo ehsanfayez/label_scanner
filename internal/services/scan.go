@@ -119,6 +119,16 @@ func (s *ScanService) Scan(ImageType string, files []*multipart.FileHeader, Send
 				}
 			}
 
+			if dat, ok := ocrResponse.Data["hard_type"]; ok {
+				ocrResponse.Data["type"] = strings.ToUpper(dat)
+				ocrResponse.Data["hard_type"] = strings.ToUpper(dat)
+			}
+
+			if dat, ok := ocrResponse.Data["ram_type"]; ok {
+				ocrResponse.Data["type"] = strings.ToUpper(dat)
+				ocrResponse.Data["ram_type"] = strings.ToUpper(dat)
+			}
+
 			if dat, ok := ocrResponse.Data["type"]; ok {
 				ocrResponse.Data["type"] = strings.ToUpper(dat)
 			}

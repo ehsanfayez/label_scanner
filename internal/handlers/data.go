@@ -77,6 +77,8 @@ type Storage struct {
 	Capacity string `json:"capacity"`
 	Type     string `json:"type"`
 	Unit     string `json:"unit"`
+	HardType string `json:"hard_type"`
+	RamType  string `json:"ram_type"`
 }
 
 func (h *DataHandler) Done(c *fiber.Ctx) error {
@@ -155,7 +157,12 @@ func getFieldValue(data Data, key string) interface{} {
 	case "rams":
 		formattedRAMs := ""
 		for i, ram := range data.RAMs {
-			formattedRAMs += fmt.Sprintf("%s%s %s", ram.Capacity, ram.Unit, ram.Type)
+			thisType := ram.Type
+			if thisType == "" {
+				thisType = ram.RamType
+			}
+
+			formattedRAMs += fmt.Sprintf("%s%s %s", ram.Capacity, ram.Unit, thisType)
 			if i < len(data.RAMs)-1 {
 				formattedRAMs += ":::"
 			}
@@ -165,7 +172,12 @@ func getFieldValue(data Data, key string) interface{} {
 	case "hdds":
 		formattedHDDs := ""
 		for i, hdd := range data.HDDs {
-			formattedHDDs += fmt.Sprintf("%s%s %s", hdd.Capacity, hdd.Unit, hdd.Type)
+			thisType := hdd.Type
+			if thisType == "" {
+				thisType = hdd.HardType
+			}
+
+			formattedHDDs += fmt.Sprintf("%s%s %s", hdd.Capacity, hdd.Unit, thisType)
 			if i < len(data.HDDs)-1 {
 				formattedHDDs += ":::"
 			}
