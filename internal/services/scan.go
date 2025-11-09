@@ -28,7 +28,7 @@ type OCRResponse struct {
 	Timestamp string            `json:"timestamp"`
 }
 
-func (s *ScanService) Scan(ImageType string, files []*multipart.FileHeader, Sender string) (*OCRResponse, error) {
+func (s *ScanService) Scan(ImageType string, files []*multipart.FileHeader, Sender string, InventoryId string) (*OCRResponse, error) {
 	base64Images := []string{}
 	for _, file := range files {
 		// open and read the file
@@ -74,6 +74,7 @@ func (s *ScanService) Scan(ImageType string, files []*multipart.FileHeader, Send
 		data["type"] = ImageType
 	}
 
+	data["inventory_id"] = InventoryId
 	dataBytes, err := json.Marshal(data)
 	if err != nil {
 		fmt.Println(err)

@@ -45,7 +45,9 @@ func (h *ScanHandler) Scan(c *fiber.Ctx) error {
 
 	ImageType := "hard"
 
-	ocrResponse, err := h.ScanService.Scan(ImageType, files, "")
+	inventoryId := c.FormValue("inventory_id")
+
+	ocrResponse, err := h.ScanService.Scan(ImageType, files, "", inventoryId)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": err.Error(),
@@ -93,7 +95,7 @@ func (h *ScanHandler) ScanType(c *fiber.Ctx) error {
 
 	Sender := c.FormValue("sender")
 
-	ocrResponse, err := h.ScanService.Scan(imageType, files, Sender)
+	ocrResponse, err := h.ScanService.Scan(imageType, files, Sender, "")
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": err.Error(),
