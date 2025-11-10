@@ -99,6 +99,8 @@ func (s *ScanService) Scan(ImageType string, files []*multipart.FileHeader, Send
 		return nil, errors.New("failed to read response")
 	}
 
+	fmt.Println("body", string(body))
+
 	var ocrResponse OCRResponse
 	err = json.Unmarshal(body, &ocrResponse)
 	if err != nil {
