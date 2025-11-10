@@ -104,6 +104,7 @@ func (s *ScanService) Scan(ImageType string, files []*multipart.FileHeader, Send
 	var ocrResponse OCRResponse
 	err = json.Unmarshal(body, &ocrResponse)
 	if err != nil {
+		fmt.Println(err)
 		return nil, errors.New("failed to unmarshal response")
 	}
 
