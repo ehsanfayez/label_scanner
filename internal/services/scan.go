@@ -23,9 +23,10 @@ func NewScanService() *ScanService {
 }
 
 type OCRResponse struct {
-	Status    string            `json:"status"`
-	Data      map[string]string `json:"data"`
-	Timestamp string            `json:"timestamp"`
+	Status    string                 `json:"status"`
+	Data      map[string]interface{} `json:"data"`
+	Timestamp string                 `json:"timestamp"`
+	ImageUrl  []string               `json:"image_url"`
 }
 
 func (s *ScanService) Scan(ImageType string, files []*multipart.FileHeader, Sender string, InventoryId string) (*OCRResponse, error) {
@@ -111,42 +112,52 @@ func (s *ScanService) Scan(ImageType string, files []*multipart.FileHeader, Send
 	if Sender == "scanner" {
 		for key, value := range ocrResponse.Data {
 			if dat, ok := ocrResponse.Data["capacity"]; ok {
-				dat = strings.ToUpper(dat)
-				if strings.Contains(dat, "GB") {
-					ocrResponse.Data["capacity"] = strings.TrimSpace(strings.ReplaceAll(dat, "GB", ""))
-					ocrResponse.Data["unit"] = "GB"
-				}
+				if datStr, ok := dat.(string); ok {
+					datStr = strings.ToUpper(datStr)
+					if strings.Contains(datStr, "GB") {
+						ocrResponse.Data["capacity"] = strings.TrimSpace(strings.ReplaceAll(datStr, "GB", ""))
+						ocrResponse.Data["unit"] = "GB"
+					}
 
-				if strings.Contains(dat, "TB") {
-					ocrResponse.Data["capacity"] = strings.TrimSpace(strings.ReplaceAll(dat, "TB", ""))
-					ocrResponse.Data["unit"] = "TB"
+					if strings.Contains(datStr, "TB") {
+						ocrResponse.Data["capacity"] = strings.TrimSpace(strings.ReplaceAll(datStr, "TB", ""))
+						ocrResponse.Data["unit"] = "TB"
+					}
 				}
 			}
 
 			if dat, ok := ocrResponse.Data["hard_type"]; ok {
-				ocrResponse.Data["type"] = strings.ToUpper(dat)
-				ocrResponse.Data["hard_type"] = strings.ToUpper(dat)
+				if datStr, ok := dat.(string); ok {
+					ocrResponse.Data["type"] = strings.ToUpper(datStr)
+					ocrResponse.Data["hard_type"] = strings.ToUpper(datStr)
+				}
 			}
 
 			if dat, ok := ocrResponse.Data["ram_type"]; ok {
-				ocrResponse.Data["type"] = strings.ToUpper(dat)
-				ocrResponse.Data["ram_type"] = strings.ToUpper(dat)
+				if datStr, ok := dat.(string); ok {
+					ocrResponse.Data["type"] = strings.ToUpper(datStr)
+					ocrResponse.Data["ram_type"] = strings.ToUpper(datStr)
+				}
 			}
 
 			if dat, ok := ocrResponse.Data["type"]; ok {
-				ocrResponse.Data["type"] = strings.ToUpper(dat)
+				if datStr, ok := dat.(string); ok {
+					ocrResponse.Data["type"] = strings.ToUpper(datStr)
+				}
 			}
 
 			if key == "brand" {
-				ocrResponse.Data["make"] = value
-				continue
+				if datStr, ok := value.(string); ok {
+					ocrResponse.Data["make"] = strings.ToUpper(datStr)
+				}
 			}
 		}
 	} else {
 		for key, value := range ocrResponse.Data {
 			if key == "brand" {
-				ocrResponse.Data["make"] = value
-				continue
+				if datStr, ok := value.(string); ok {
+					ocrResponse.Data["make"] = strings.ToUpper(datStr)
+				}
 			}
 		}
 	}
