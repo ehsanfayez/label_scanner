@@ -112,28 +112,35 @@ func main() {
 	}))
 
 	app.Static("/files", "files")
-	app.Get("/api/types", oAuthMiddleware, func(c *fiber.Ctx) error {
+
+	app.Get("/api/auth", oAuthMiddleware, func(c *fiber.Ctx) error {
+		return c.JSON(fiber.Map{
+			"message": "Auth successful",
+		})
+	})
+
+	app.Get("/api/types", func(c *fiber.Ctx) error {
 		return c.JSON(types)
 	})
 
-	app.Get("/api/storages", oAuthMiddleware, func(c *fiber.Ctx) error {
+	app.Get("/api/storages", func(c *fiber.Ctx) error {
 		return c.JSON(fiber.Map{
 			"rams":  rams,
 			"hards": hards,
 		})
 	})
 
-	app.Get("/api/types/:type", oAuthMiddleware, func(c *fiber.Ctx) error {
+	app.Get("/api/types/:type", func(c *fiber.Ctx) error {
 		return c.JSON(types[c.Params("type")])
 	})
 
 	scanHandler := handlers.NewScanHandler()
-	app.Post("/api/scan", oAuthMiddleware, scanHandler.Scan)
+	app.Post("/api/scan", scanHandler.Scan)
 
-	app.Post("/api/scan_type", oAuthMiddleware, scanHandler.ScanType)
+	app.Post("/api/scan_type", scanHandler.ScanType)
 
 	dataHandler := handlers.NewDataHandler()
-	app.Post("/api/done", oAuthMiddleware, dataHandler.Done)
+	app.Post("/api/done", dataHandler.Done)
 
 	log.Fatal(app.Listen(":" + config.ServerConfig.Port))
 }
