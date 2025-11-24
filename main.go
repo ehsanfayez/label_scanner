@@ -1,10 +1,12 @@
 package main
 
 import (
+	"context"
 	"log"
 	"scanner/config"
 	"scanner/internal/handlers"
 	"scanner/internal/middlewares"
+	"scanner/internal/utils"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
@@ -95,8 +97,12 @@ func main() {
 		BodyLimit:   200 * 1024 * 1024, // 100 MB for large file uploads
 	})
 
-	pasetoMiddleware := middlewares.PasetoMiddleware(config.AuthConfig.PrivateKeySeed)
-	_ = pasetoMiddleware
+	// Initialize OIDC provider and verifier
+	if err := utils.InitOIDCProvider(context.Background(), config.OIDCProvider.Authority, config.OIDCProvider.ExpectedAudience, config.OIDCProvider.RequiredScopes); err != nil {
+		log.Fatalf("Failed to initialize OIDC provider: %v", err)
+	}
+
+	oAuthMiddleware := middlewares.OAuthMiddleware()
 
 	app.Use(cors.New(cors.Config{
 		AllowHeaders:     "Origin, Content-Type, Accept, Content-Length, Accept-Language, Accept-Encoding, Connection, Access-Control-Allow-Origin, Authorization",
@@ -106,30 +112,28 @@ func main() {
 	}))
 
 	app.Static("/files", "files")
-	app.Post("/api/login", handlers.Login)
-
-	app.Get("/api/types", func(c *fiber.Ctx) error {
+	app.Get("/api/types", oAuthMiddleware, func(c *fiber.Ctx) error {
 		return c.JSON(types)
 	})
 
-	app.Get("/api/storages", func(c *fiber.Ctx) error {
+	app.Get("/api/storages", oAuthMiddleware, func(c *fiber.Ctx) error {
 		return c.JSON(fiber.Map{
 			"rams":  rams,
 			"hards": hards,
 		})
 	})
 
-	app.Get("/api/types/:type", func(c *fiber.Ctx) error {
+	app.Get("/api/types/:type", oAuthMiddleware, func(c *fiber.Ctx) error {
 		return c.JSON(types[c.Params("type")])
 	})
 
 	scanHandler := handlers.NewScanHandler()
-	app.Post("/api/scan", scanHandler.Scan)
+	app.Post("/api/scan", oAuthMiddleware, scanHandler.Scan)
 
-	app.Post("/api/scan_type", scanHandler.ScanType)
+	app.Post("/api/scan_type", oAuthMiddleware, scanHandler.ScanType)
 
 	dataHandler := handlers.NewDataHandler()
-	app.Post("/api/done", dataHandler.Done)
+	app.Post("/api/done", oAuthMiddleware, dataHandler.Done)
 
 	log.Fatal(app.Listen(":" + config.ServerConfig.Port))
 }

@@ -14,6 +14,7 @@ type Config struct {
 	AuthConfig      AuthConfig
 	OCRConfig       OCRConfig
 	EmbeddingConfig EmbeddingConfig
+	OIDCProvider    OIDCProvider
 }
 
 type ServerConfig struct {
@@ -40,6 +41,12 @@ type OCRConfig struct {
 type EmbeddingConfig struct {
 	VectorsFile  string
 	OpenaiApiKey string
+}
+
+type OIDCProvider struct {
+	Authority        string
+	ExpectedAudience string
+	RequiredScopes   string
 }
 
 var (
@@ -82,11 +89,18 @@ func InitConfig() *Config {
 			OpenaiApiKey: viper.GetString("OPENAI_API_KEY"),
 		}
 
+		oidc := &OIDCProvider{
+			Authority:        viper.GetString("OIDC_AUTHORITY"),
+			ExpectedAudience: viper.GetString("OIDC_EXPECTED_AUDIENCE"),
+			RequiredScopes:   viper.GetString("OIDC_REQUIRED_SCOPES"),
+		}
+
 		cfg = &Config{
 			ServerConfig:    *server,
 			AuthConfig:      *auth,
 			OCRConfig:       *ocr,
 			EmbeddingConfig: *embedding,
+			OIDCProvider:    *oidc,
 		}
 
 		fmt.Println("Config initialized successfully")
