@@ -129,7 +129,7 @@ func main() {
 	})
 
 	scanHandler := handlers.NewScanHandler()
-	app.Post("/api/scan", oAuthMiddleware, scanHandler.Scan)
+	app.Post("/api/scan", scanHandler.Scan)
 
 	app.Post("/api/scan_type", oAuthMiddleware, scanHandler.ScanType)
 
