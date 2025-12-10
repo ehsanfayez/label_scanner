@@ -1,42 +1,65 @@
 package middlewares
 
 import (
+	"fmt"
 	"log"
+	"net/http"
 	"scanner/config"
 	"scanner/internal/utils"
-	"slices"
 	"strings"
 
-	pasetoware "github.com/gofiber/contrib/paseto"
 	"github.com/gofiber/fiber/v2"
 )
 
-func PasetoMiddleware(privateKeySeed string) func(*fiber.Ctx) error {
-	privateKey := utils.LoadPrivateKey(privateKeySeed)
-	return pasetoware.New(pasetoware.Config{
-		TokenPrefix: "Bearer",
-		PrivateKey:  privateKey,
-		PublicKey:   privateKey.Public(),
-		ContextKey:  "claims",
-		ErrorHandler: func(c *fiber.Ctx, err error) error {
-			return c.SendStatus(fiber.StatusUnauthorized)
-		},
-	})
+func WebserviceMiddleware() func(*fiber.Ctx) error {
+	return func(c *fiber.Ctx) error {
+		cfg := config.GetConfig()
+		headerAPI := c.Get(cfg.Webservice.HeaderKey)
+		if headerAPI == "" {
+			return c.Status(http.StatusUnauthorized).JSON(fiber.Map{
+				"error": "Invalid API key",
+			})
+		}
+
+		if headerAPI != cfg.Webservice.ApiKey {
+			return c.Status(http.StatusUnauthorized).JSON(fiber.Map{
+				"error": "Invalid API key",
+			})
+		}
+
+		ip := c.IP()
+		var ips []string
+		if strings.Contains(ip, ",") {
+			ips = strings.Split(ip, ",")
+			for i, ip := range ips {
+				ips[i] = strings.TrimSpace(ip)
+			}
+		} else {
+			ips = []string{strings.TrimSpace(ip)}
+		}
+
+		log.Println(ips)
+		err := checkClientIP(ips, cfg.Webservice.AllowedIPs)
+		if err != nil {
+			return c.Status(http.StatusUnauthorized).JSON(fiber.Map{
+				"error": err.Error(),
+			})
+		}
+
+		return c.Next()
+	}
 }
 
-func IPMiddleware(c *fiber.Ctx) error {
-	ip := c.IP()
-	allowedIPs := config.GetConfig().OCRConfig.IPs
-	ips := strings.Split(ip, ",")
-	for _, ip := range ips {
-		if slices.Contains(allowedIPs, strings.TrimSpace(ip)) {
-			return c.Next()
+func checkClientIP(clientIps []string, allowedIPs []string) error {
+	for _, allowedIP := range allowedIPs {
+		for _, clientIp := range clientIps {
+			if clientIp == allowedIP {
+				return nil
+			}
 		}
 	}
 
-	return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
-		"message": "Forbidden",
-	})
+	return fmt.Errorf("invalid IP address")
 }
 
 func OAuthMiddleware() fiber.Handler {

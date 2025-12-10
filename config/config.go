@@ -15,6 +15,16 @@ type Config struct {
 	OCRConfig       OCRConfig
 	EmbeddingConfig EmbeddingConfig
 	OIDCProvider    OIDCProvider
+	Webservice      Webservice
+	MongoDB         MongoDB
+}
+
+type MongoDB struct {
+	Host     string
+	Port     int
+	Username string
+	Password string
+	Database string
 }
 
 type ServerConfig struct {
@@ -49,6 +59,12 @@ type OIDCProvider struct {
 	RequiredScopes   string
 }
 
+type Webservice struct {
+	HeaderKey  string
+	ApiKey     string
+	AllowedIPs []string
+}
+
 var (
 	cfg  *Config
 	once sync.Once
@@ -68,6 +84,14 @@ func InitConfig() *Config {
 			Port:    viper.GetString("PORT"),
 			Proxy:   viper.GetString("PROXY_URL"),
 			BaseUrl: viper.GetString("BASE_URL"),
+		}
+
+		mongoDB := &MongoDB{
+			Host:     viper.GetString("MONGODB_HOST"),
+			Port:     viper.GetInt("MONGODB_PORT"),
+			Username: viper.GetString("MONGODB_USERNAME"),
+			Password: viper.GetString("MONGODB_PASSWORD"),
+			Database: viper.GetString("MONGODB_DATABASE"),
 		}
 
 		auth := &AuthConfig{
@@ -95,12 +119,20 @@ func InitConfig() *Config {
 			RequiredScopes:   viper.GetString("OIDC_REQUIRED_SCOPES"),
 		}
 
+		Webservice := &Webservice{
+			HeaderKey:  viper.GetString("WEBSERVICE_HEADER_KEY"),
+			ApiKey:     viper.GetString("WEBSERVICE_API_KEY"),
+			AllowedIPs: viper.GetStringSlice("WEBSERVICE_ALLOWED_IPS"),
+		}
+
 		cfg = &Config{
 			ServerConfig:    *server,
 			AuthConfig:      *auth,
 			OCRConfig:       *ocr,
 			EmbeddingConfig: *embedding,
 			OIDCProvider:    *oidc,
+			Webservice:      *Webservice,
+			MongoDB:         *mongoDB,
 		}
 
 		fmt.Println("Config initialized successfully")

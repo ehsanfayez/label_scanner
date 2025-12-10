@@ -2,6 +2,7 @@ package services
 
 import (
 	"bytes"
+	"context"
 	"encoding/base64"
 	"encoding/json"
 	"errors"
@@ -11,15 +12,22 @@ import (
 	"net/http"
 	"net/url"
 	"scanner/config"
+	"scanner/internal/repositories"
+	"slices"
 	"strings"
 	"time"
+
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type ScanService struct {
+	hardRepo *repositories.HardRepository
 }
 
 func NewScanService() *ScanService {
-	return &ScanService{}
+	return &ScanService{
+		hardRepo: repositories.NewHardRepository(),
+	}
 }
 
 type OCRResponse struct {
@@ -29,7 +37,7 @@ type OCRResponse struct {
 	ImageUrl  []string               `json:"image_url"`
 }
 
-func (s *ScanService) Scan(ImageType string, files []*multipart.FileHeader, Sender string, InventoryId string) (*OCRResponse, error) {
+func (s *ScanService) ScanFile(ImageType string, files []*multipart.FileHeader, Sender string, InventoryId string) (*OCRResponse, error) {
 	base64Images := []string{}
 	for _, file := range files {
 		// open and read the file
@@ -55,6 +63,10 @@ func (s *ScanService) Scan(ImageType string, files []*multipart.FileHeader, Send
 		base64Images = append(base64Images, base64Image)
 	}
 
+	return s.Scan(ImageType, base64Images, Sender, InventoryId)
+}
+
+func (s *ScanService) Scan(ImageType string, base64Images []string, Sender string, InventoryId string) (*OCRResponse, error) {
 	ocrApi := config.GetConfig().OCRConfig.APIURL + "/scan"
 	// add proxy to ocr api
 	proxyUrl, err := url.Parse(config.GetConfig().ServerConfig.Proxy)
@@ -99,8 +111,6 @@ func (s *ScanService) Scan(ImageType string, files []*multipart.FileHeader, Send
 	if err != nil {
 		return nil, errors.New("failed to read response")
 	}
-
-	fmt.Println("body", string(body))
 
 	var ocrResponse OCRResponse
 	err = json.Unmarshal(body, &ocrResponse)
@@ -163,4 +173,183 @@ func (s *ScanService) Scan(ImageType string, files []*multipart.FileHeader, Send
 	}
 
 	return &ocrResponse, nil
+}
+
+func (s *ScanService) StoreScanResultIfNotExists(ctx context.Context, ocrResponse *OCRResponse, images []string, inventoryId string) (*repositories.Hard, error) {
+	serialNumber := ""
+	makeValue := ""
+
+	if val, ok := ocrResponse.Data["serial_number"]; ok {
+		if valStr, ok := val.(string); ok {
+			serialNumber = valStr
+		}
+	}
+
+	if val, ok := ocrResponse.Data["make"]; ok {
+		if valStr, ok := val.(string); ok {
+			makeValue = valStr
+		}
+	}
+
+	existingHard, err := s.hardRepo.FindByInput(ctx, repositories.HardFilter{
+		SerialNumber: serialNumber,
+		Make:         makeValue,
+		InventoryID:  inventoryId,
+	})
+
+	if err != nil && err.Error() != "mongo: no documents in result" {
+		return nil, err
+	}
+
+	if existingHard != nil {
+		// already exists
+		return existingHard, nil
+	}
+
+	newHard := &repositories.Hard{
+		ID:           primitive.NewObjectID(),
+		Capacity:     "",
+		Eui:          "",
+		Type:         "",
+		InventoryID:  inventoryId,
+		Make:         makeValue,
+		Model:        "",
+		PartNumber:   "",
+		SerialNumber: serialNumber,
+		Psid:         "",
+		ExtraFileds:  make(map[string]interface{}),
+		Images:       images,
+	}
+
+	for key, value := range ocrResponse.Data {
+		valStr := ""
+		if vl, ok := value.(string); ok {
+			valStr = fmt.Sprintf("%v", vl)
+		}
+
+		switch key {
+		case "capacity":
+			newHard.Capacity = valStr
+		case "eui":
+			newHard.Eui = valStr
+		case "hard_type":
+			newHard.Type = valStr
+		case "model":
+			newHard.Model = valStr
+		case "part_number":
+			newHard.PartNumber = valStr
+		case "psid":
+			newHard.Psid = valStr
+		default:
+			if slices.Contains([]string{"make", "serial_number", "inventory_id", "hard_id"}, key) {
+				continue
+			}
+
+			newHard.ExtraFileds[key] = value
+		}
+	}
+
+	err = s.hardRepo.Insert(ctx, newHard)
+	if err != nil {
+		return nil, err
+	}
+
+	return newHard, nil
+}
+
+func (s *ScanService) GetHardInfo(ctx context.Context, filter repositories.HardFilter) (*repositories.Hard, error) {
+	hard, err := s.hardRepo.FindByInput(ctx, filter)
+	if err != nil {
+		return nil, err
+	}
+
+	return hard, nil
+}
+
+type AddHardResponse struct {
+	InventoryID  string `json:"inventory_id" form:"inventory_id"`
+	Type         string `json:"hard_type" form:"hard_type"`
+	Capacity     string `json:"capacity" form:"capacity"`
+	Eui          string `json:"eui" form:"eui"`
+	Make         string `json:"make" form:"make"`
+	Model        string `json:"model" form:"model"`
+	PartNumber   string `json:"part_number" form:"part_number"`
+	SerialNumber string `json:"serial_number" form:"serial_number"`
+	Psid         string `json:"psid" form:"psid"`
+}
+
+func (s *ScanService) AddHard(ctx context.Context, data AddHardResponse) (*repositories.Hard, error) {
+	newHard := &repositories.Hard{
+		ID:           primitive.NewObjectID(),
+		Capacity:     data.Capacity,
+		Eui:          data.Eui,
+		Type:         data.Type,
+		InventoryID:  data.InventoryID,
+		Make:         data.Make,
+		Model:        data.Model,
+		PartNumber:   data.PartNumber,
+		SerialNumber: data.SerialNumber,
+		Psid:         data.Psid,
+		ExtraFileds:  make(map[string]interface{}),
+		Images:       []string{},
+	}
+
+	err := s.hardRepo.Insert(ctx, newHard)
+	if err != nil {
+		return nil, err
+	}
+
+	return newHard, nil
+}
+
+type EditHardResponse struct {
+	InventoryID  *string `json:"inventory_id" form:"inventory_id"`
+	Type         *string `json:"hard_type" form:"hard_type"`
+	Capacity     *string `json:"capacity" form:"capacity"`
+	Eui          *string `json:"eui" form:"eui"`
+	Make         *string `json:"make" form:"make"`
+	Model        *string `json:"model" form:"model"`
+	PartNumber   *string `json:"part_number" form:"part_number"`
+	SerialNumber *string `json:"serial_number" form:"serial_number"`
+	Psid         *string `json:"psid" form:"psid"`
+}
+
+func (s *ScanService) UpdateHard(ctx context.Context, hard *repositories.Hard, data EditHardResponse) error {
+	if data.Capacity != nil {
+		hard.Capacity = *data.Capacity
+	}
+
+	if data.Eui != nil {
+		hard.Eui = *data.Eui
+	}
+
+	if data.Type != nil {
+		hard.Type = *data.Type
+	}
+
+	if data.InventoryID != nil {
+		hard.InventoryID = *data.InventoryID
+	}
+
+	if data.Make != nil {
+		hard.Make = *data.Make
+	}
+
+	if data.Model != nil {
+		hard.Model = *data.Model
+	}
+
+	if data.PartNumber != nil {
+		hard.PartNumber = *data.PartNumber
+	}
+
+	if data.SerialNumber != nil {
+		hard.SerialNumber = *data.SerialNumber
+	}
+
+	if data.Psid != nil {
+		hard.Psid = *data.Psid
+	}
+
+	return s.hardRepo.Update(ctx, hard.ID.Hex(), hard)
 }

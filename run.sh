@@ -15,4 +15,5 @@ docker rm scanner_server || true
 # Runs in detached mode (-d) and restart if stoped, within the 'mrt' network
 docker run --restart=always -d --network=mrt --name scanner_server \
 -v $(pwd)/files:/app/files \
+-v $(pwd)/uploads:/app/uploads \
 scanner_server
