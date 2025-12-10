@@ -235,7 +235,7 @@ func (h *WebServiceHandler) ScanFile(c *fiber.Ctx) error {
 
 	cfg := config.GetConfig()
 	for index, image := range hard.Images {
-		hard.Images[index] = cfg.ServerConfig.BaseUrl + "/images/" + image
+		hard.Images[index] = cfg.ServerConfig.BaseUrl + "/image/" + image
 	}
 
 	return c.JSON(fiber.Map{
@@ -277,7 +277,7 @@ func (h *WebServiceHandler) GetInfo(c *fiber.Ctx) error {
 
 	cfg := config.GetConfig()
 	for index, image := range hard.Images {
-		hard.Images[index] = cfg.ServerConfig.BaseUrl + "/images/" + image
+		hard.Images[index] = cfg.ServerConfig.BaseUrl + "/image/" + image
 	}
 
 	return c.JSON(fiber.Map{
@@ -366,6 +366,13 @@ func (h *WebServiceHandler) EditHard(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": fmt.Sprintf("Failed to update hard info: %v", err),
 		})
+	}
+
+	if len(hard.Images) > 0 {
+		cfg := config.GetConfig()
+		for index, image := range hard.Images {
+			hard.Images[index] = cfg.ServerConfig.BaseUrl + "/image/" + image
+		}
 	}
 
 	return c.JSON(fiber.Map{
