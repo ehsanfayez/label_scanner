@@ -120,7 +120,7 @@ func SetupWebServicesRoutes(app *fiber.App, config *config.Config) {
 	app.Post("/api/webservice/scan", webserviceMiddleware, webServiceHandler.Scan)
 	app.Post("/api/webservice/scan_file", webserviceMiddleware, webServiceHandler.ScanFile)
 	app.Get("/api/webservice/hards", webserviceMiddleware, webServiceHandler.GetInfo)
-	app.Get("/api/webservice/image/:filename", webServiceHandler.GetImage)
+	app.Get("/image/:filename", webServiceHandler.GetImage)
 	app.Post("/api/webservice/hards", webserviceMiddleware, webServiceHandler.AddHard)
 	app.Put("/api/webservice/hards", webserviceMiddleware, webServiceHandler.EditHard)
 }
