@@ -120,6 +120,11 @@ func (h *ReaderHandler) Scan(c *fiber.Ctx) error {
 	})
 }
 
+type StoreRequest struct {
+	Psid  string `json:"psid"`
+	Image string `json:"image"`
+}
+
 func (h *ReaderHandler) Store(c *fiber.Ctx) error {
 	token := c.Params("token")
 	data, err := validate(h.decodeService, token)
@@ -129,7 +134,7 @@ func (h *ReaderHandler) Store(c *fiber.Ctx) error {
 		})
 	}
 
-	var requestData map[string]interface{}
+	var requestData StoreRequest
 	if err := c.BodyParser(&requestData); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"error": fmt.Sprintf("Failed to parse request body: %v", err),
@@ -137,14 +142,8 @@ func (h *ReaderHandler) Store(c *fiber.Ctx) error {
 	}
 
 	// check psid exit in requestData
-	psid, ok := requestData["psid"].(string)
-	if !ok {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "psid is required in the request body",
-		})
-	}
-
-	image, _ := requestData["image"].(string)
+	psid := requestData.Psid
+	image := requestData.Image
 
 	hardData := services.AddHardResponse{
 		InventoryID:  data.InventoryID,
