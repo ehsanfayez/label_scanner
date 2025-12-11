@@ -129,7 +129,7 @@ func SetupWebServicesRoutes(app *fiber.App, config *config.Config, scanService *
 
 func SetupReaderRoutes(app *fiber.App, scanService *services.ScanService) {
 	readerHandler := handlers.NewReaderHandler(scanService)
-	app.Post("/api/reader/validate/:token", readerHandler.Validate)
+	app.Get("/api/reader/validate/:token", readerHandler.Validate)
 	app.Post("/api/reader/scan/:token", readerHandler.Scan)
 	app.Post("/api/reader/store/:token", readerHandler.Store)
 }
