@@ -4,6 +4,7 @@ import (
 	"scanner/config"
 	"scanner/internal/handlers"
 	"scanner/internal/middlewares"
+	"scanner/internal/services"
 
 	"github.com/gofiber/fiber/v2"
 )
@@ -109,12 +110,13 @@ func SetupRoutes(app *fiber.App, config *config.Config, oAuthMiddleware fiber.Ha
 
 	dataHandler := handlers.NewDataHandler()
 	app.Post("/api/done", oAuthMiddleware, dataHandler.Done)
-
-	SetupWebServicesRoutes(app, config)
+	scanService := services.NewScanService()
+	SetupWebServicesRoutes(app, config, scanService)
+	SetupReaderRoutes(app, scanService)
 }
 
-func SetupWebServicesRoutes(app *fiber.App, config *config.Config) {
-	webServiceHandler := handlers.NewWebServiceHandler()
+func SetupWebServicesRoutes(app *fiber.App, config *config.Config, scanService *services.ScanService) {
+	webServiceHandler := handlers.NewWebServiceHandler(scanService)
 	webserviceMiddleware := middlewares.WebserviceMiddleware()
 	app.Get("/api/webservice/health", webserviceMiddleware, webServiceHandler.HealthCheck)
 	app.Post("/api/webservice/scan", webserviceMiddleware, webServiceHandler.Scan)
@@ -123,4 +125,11 @@ func SetupWebServicesRoutes(app *fiber.App, config *config.Config) {
 	app.Get("/image/:filename", webServiceHandler.GetImage)
 	app.Post("/api/webservice/hards", webserviceMiddleware, webServiceHandler.AddHard)
 	app.Put("/api/webservice/hards", webserviceMiddleware, webServiceHandler.EditHard)
+}
+
+func SetupReaderRoutes(app *fiber.App, scanService *services.ScanService) {
+	readerHandler := handlers.NewReaderHandler(scanService)
+	app.Post("/api/reader/validate/:token", readerHandler.Validate)
+	app.Post("/api/reader/scan/:token", readerHandler.Scan)
+	app.Post("/api/reader/store/:token", readerHandler.Store)
 }

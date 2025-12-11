@@ -28,10 +28,11 @@ type MongoDB struct {
 }
 
 type ServerConfig struct {
-	App     string
-	Port    string
-	Proxy   string
-	BaseUrl string
+	App       string
+	Port      string
+	Proxy     string
+	BaseUrl   string
+	SecretKey string
 }
 
 type AuthConfig struct {
@@ -80,10 +81,11 @@ func InitConfig() *Config {
 		}
 
 		server := &ServerConfig{
-			App:     viper.GetString("APP"),
-			Port:    viper.GetString("PORT"),
-			Proxy:   viper.GetString("PROXY_URL"),
-			BaseUrl: viper.GetString("BASE_URL"),
+			App:       viper.GetString("APP"),
+			Port:      viper.GetString("PORT"),
+			Proxy:     viper.GetString("PROXY_URL"),
+			BaseUrl:   viper.GetString("BASE_URL"),
+			SecretKey: viper.GetString("SECRET_KEY"),
 		}
 
 		mongoDB := &MongoDB{

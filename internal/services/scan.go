@@ -278,7 +278,7 @@ type AddHardResponse struct {
 	Psid         string `json:"psid" form:"psid"`
 }
 
-func (s *ScanService) AddHard(ctx context.Context, data AddHardResponse) (*repositories.Hard, error) {
+func (s *ScanService) AddHard(ctx context.Context, data AddHardResponse, images []string) (*repositories.Hard, error) {
 	newHard := &repositories.Hard{
 		ID:           primitive.NewObjectID(),
 		Capacity:     data.Capacity,
@@ -291,7 +291,7 @@ func (s *ScanService) AddHard(ctx context.Context, data AddHardResponse) (*repos
 		SerialNumber: data.SerialNumber,
 		Psid:         data.Psid,
 		ExtraFileds:  make(map[string]interface{}),
-		Images:       []string{},
+		Images:       images,
 	}
 
 	err := s.hardRepo.Insert(ctx, newHard)

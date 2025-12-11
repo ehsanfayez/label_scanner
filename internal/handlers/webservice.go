@@ -26,9 +26,9 @@ type WebServiceHandler struct {
 	ScanService *services.ScanService
 }
 
-func NewWebServiceHandler() *WebServiceHandler {
+func NewWebServiceHandler(scanService *services.ScanService) *WebServiceHandler {
 	return &WebServiceHandler{
-		ScanService: services.NewScanService(),
+		ScanService: scanService,
 	}
 }
 
@@ -312,7 +312,7 @@ func (h *WebServiceHandler) AddHard(c *fiber.Ctx) error {
 		})
 	}
 
-	hard, err = h.ScanService.AddHard(c.Context(), req)
+	hard, err = h.ScanService.AddHard(c.Context(), req, []string{})
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": fmt.Sprintf("Failed to add hard: %v", err),
