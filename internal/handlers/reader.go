@@ -115,7 +115,7 @@ func (h *ReaderHandler) Scan(c *fiber.Ctx) error {
 	}
 
 	return c.JSON(fiber.Map{
-		"psid":  ocrResponse,
+		"psid":  ocrResponse.Data["psid"],
 		"image": fileName,
 	})
 }
