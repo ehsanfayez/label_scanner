@@ -44,6 +44,8 @@ func validate(decodeService *services.DecryptService, token string) (*DecodeData
 		return nil, err
 	}
 
+	fmt.Printf("%+v\n", newData)
+
 	return newData, nil
 }
 
