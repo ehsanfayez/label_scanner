@@ -399,13 +399,13 @@ func (h *WebServiceHandler) WipeAccept(c *fiber.Ctx) error {
 		}
 
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error": "Failed to process vipe accept",
+			"error": "Failed to process Wipe accept",
 		})
 	}
 
 	return c.JSON(fiber.Map{
 		"status":    "success",
-		"message":   "Vipe accept processed successfully",
+		"message":   "Wipe accept processed successfully",
 		"timestamp": time.Now(),
 	})
 }
