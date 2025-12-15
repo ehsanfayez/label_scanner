@@ -301,7 +301,6 @@ func (h *WebServiceHandler) AddHard(c *fiber.Ctx) error {
 
 	//check if exit error
 	hard, err := h.ScanService.GetHardInfo(c.Context(), repositories.HardFilter{
-		InventoryID:  req.InventoryID,
 		Make:         req.Make,
 		SerialNumber: req.SerialNumber,
 	})
@@ -334,11 +333,6 @@ func (h *WebServiceHandler) EditHard(c *fiber.Ctx) error {
 		})
 	}
 
-	inventiryID := ""
-	if req.InventoryID != nil {
-		inventiryID = *req.InventoryID
-	}
-
 	make := ""
 	if req.Make != nil {
 		make = *req.Make
@@ -350,7 +344,6 @@ func (h *WebServiceHandler) EditHard(c *fiber.Ctx) error {
 	}
 
 	hard, err := h.ScanService.GetHardInfo(c.Context(), repositories.HardFilter{
-		InventoryID:  inventiryID,
 		Make:         make,
 		SerialNumber: serialNumber,
 	})

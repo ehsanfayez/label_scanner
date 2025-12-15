@@ -194,7 +194,6 @@ func (s *ScanService) StoreScanResultIfNotExists(ctx context.Context, ocrRespons
 	existingHard, err := s.hardRepo.FindByInput(ctx, repositories.HardFilter{
 		SerialNumber: serialNumber,
 		Make:         makeValue,
-		InventoryID:  inventoryId,
 	})
 
 	if err != nil && err.Error() != "mongo: no documents in result" {

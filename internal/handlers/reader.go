@@ -30,7 +30,7 @@ type DecodeData struct {
 	InventoryID  string `json:"inventory_id"`
 }
 
-func validate(decodeService *services.DecryptService, token string) (*DecodeData, error) {
+func validate(decodeService *services.DecryptService, scanService *services.ScanService, token string) (*DecodeData, error) {
 	// 16, 24, or 32 bytes for AES
 	decrypted, err := decodeService.Decode(token)
 	if err != nil {
@@ -44,14 +44,21 @@ func validate(decodeService *services.DecryptService, token string) (*DecodeData
 		return nil, err
 	}
 
-	fmt.Printf("%+v\n", newData)
+	// hard, err := scanService.GetHardInfo(context.Background(), repositories.HardFilter{
+	// 	InventoryID:  newData.InventoryID,
+	// 	SerialNumber: newData.SerialNumber,
+	// })
+
+	// if err != nil || hard != nil {
+	// 	return nil, fmt.Errorf("link is not valid")
+	// }
 
 	return newData, nil
 }
 
 func (h *ReaderHandler) Validate(c *fiber.Ctx) error {
 	token := c.Params("token")
-	_, err := validate(h.decodeService, token)
+	_, err := validate(h.decodeService, h.scanService, token)
 	if err != nil {
 		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
 			"error": "Invalid token",
@@ -63,7 +70,7 @@ func (h *ReaderHandler) Validate(c *fiber.Ctx) error {
 
 func (h *ReaderHandler) Scan(c *fiber.Ctx) error {
 	token := c.Params("token")
-	data, err := validate(h.decodeService, token)
+	data, err := validate(h.decodeService, h.scanService, token)
 	if err != nil {
 		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
 			"error": "Invalid token",
@@ -127,7 +134,7 @@ type StoreRequest struct {
 
 func (h *ReaderHandler) Store(c *fiber.Ctx) error {
 	token := c.Params("token")
-	data, err := validate(h.decodeService, token)
+	data, err := validate(h.decodeService, h.scanService, token)
 	if err != nil {
 		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
 			"error": "Invalid token",
@@ -150,8 +157,8 @@ func (h *ReaderHandler) Store(c *fiber.Ctx) error {
 		SerialNumber: data.SerialNumber,
 		Psid:         psid,
 	}
-
-	hard, err := h.scanService.AddHard(c.Context(), hardData, []string{image})
+	// TODO : check not repeat psid
+	_, err = h.scanService.AddHard(c.Context(), hardData, []string{image})
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": fmt.Sprintf("Failed to store hard data: %v", err),
@@ -159,8 +166,6 @@ func (h *ReaderHandler) Store(c *fiber.Ctx) error {
 	}
 
 	return c.JSON(fiber.Map{
-		"message":     "Hard data stored successfully",
-		"hard_record": hard,
+		"message": "Hard data stored successfully",
 	})
-
 }

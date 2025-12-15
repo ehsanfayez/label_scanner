@@ -48,7 +48,7 @@ func NewHardRepository() *HardRepository {
 type HardFilter struct {
 	SerialNumber string `json:"serial_number" form:"serial_number"`
 	Make         string `json:"make" form:"make"`
-	InventoryID  string `json:"inventory_id" form:"inventory_id"`
+	// InventoryID  string `json:"inventory_id" form:"inventory_id"`
 }
 
 func (r *HardRepository) FindByInput(ctx context.Context, data HardFilter) (*Hard, error) {
@@ -60,10 +60,6 @@ func (r *HardRepository) FindByInput(ctx context.Context, data HardFilter) (*Har
 
 	if data.Make != "" {
 		filer["make"] = data.Make
-	}
-
-	if data.InventoryID != "" {
-		filer["inventory_id"] = data.InventoryID
 	}
 
 	err := r.collection.FindOne(ctx, filer).Decode(&hard)
