@@ -1,11 +1,13 @@
 package handlers
 
 import (
-	"encoding/json"
+	"context"
 	"fmt"
 	"path/filepath"
 	"scanner/config"
+	"scanner/internal/repositories"
 	"scanner/internal/services"
+	"slices"
 	"strings"
 
 	"github.com/gofiber/fiber/v2"
@@ -13,64 +15,50 @@ import (
 )
 
 type ReaderHandler struct {
-	decodeService *services.DecryptService
-	scanService   *services.ScanService
+	decodeService  *services.DecryptService
+	scanService    *services.ScanService
+	requestService *services.RequestService
 }
 
-func NewReaderHandler(scanService *services.ScanService) *ReaderHandler {
+func NewReaderHandler(scanService *services.ScanService, requestService *services.RequestService) *ReaderHandler {
 	cfg := config.GetConfig()
 	return &ReaderHandler{
-		decodeService: services.NewDecryptService(cfg.ServerConfig.SecretKey),
-		scanService:   scanService,
+		decodeService:  services.NewDecryptService(cfg.ServerConfig.SecretKey),
+		scanService:    scanService,
+		requestService: requestService,
 	}
 }
 
-type DecodeData struct {
-	SerialNumber string `json:"serial_number"`
-	InventoryID  string `json:"inventory_id"`
-}
-
-func validate(decodeService *services.DecryptService, scanService *services.ScanService, token string) (*DecodeData, error) {
-	// 16, 24, or 32 bytes for AES
-	decrypted, err := decodeService.Decode(token)
-	if err != nil {
-		fmt.Printf("Error decoding data: %v\n", err)
-		return nil, err
+func validate(ctx context.Context, requestService *services.RequestService, token string) ([]string, error) {
+	request, err := requestService.GetRequestByID(ctx, token)
+	if err != nil || request == nil {
+		return nil, fmt.Errorf("invalid token")
 	}
 
-	newData := &DecodeData{}
-	if err := json.Unmarshal([]byte(decrypted), newData); err != nil {
-		fmt.Printf("Error unmarshalling decrypted data: %v\n", err)
-		return nil, err
+	if len(request.SerialNumbers) == 0 {
+		return nil, fmt.Errorf("invalid token")
 	}
 
-	// hard, err := scanService.GetHardInfo(context.Background(), repositories.HardFilter{
-	// 	InventoryID:  newData.InventoryID,
-	// 	SerialNumber: newData.SerialNumber,
-	// })
-
-	// if err != nil || hard != nil {
-	// 	return nil, fmt.Errorf("link is not valid")
-	// }
-
-	return newData, nil
+	return request.SerialNumbers, nil
 }
 
 func (h *ReaderHandler) Validate(c *fiber.Ctx) error {
 	token := c.Params("token")
-	_, err := validate(h.decodeService, h.scanService, token)
+	serials, err := validate(c.Context(), h.requestService, token)
 	if err != nil {
 		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
 			"error": "Invalid token",
 		})
 	}
 
-	return c.SendStatus(fiber.StatusOK)
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{
+		"serial_numbers": serials,
+	})
 }
 
 func (h *ReaderHandler) Scan(c *fiber.Ctx) error {
 	token := c.Params("token")
-	data, err := validate(h.decodeService, h.scanService, token)
+	serials, err := validate(c.Context(), h.requestService, token)
 	if err != nil {
 		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
 			"error": "Invalid token",
@@ -83,6 +71,14 @@ func (h *ReaderHandler) Scan(c *fiber.Ctx) error {
 			"error":        "Content-Type must be multipart/form-data",
 			"received":     contentType,
 			"content_type": c.Get("Content-Type"),
+		})
+	}
+
+	//  get serial number from user request
+	serialNumber := c.FormValue("serial_number")
+	if !slices.Contains(serials, serialNumber) {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "Serial number not in the valid serial numbers list",
 		})
 	}
 
@@ -103,7 +99,7 @@ func (h *ReaderHandler) Scan(c *fiber.Ctx) error {
 	}
 
 	ImageType := "hard"
-	ocrResponse, err := h.scanService.ScanFile(ImageType, files, "", data.InventoryID)
+	ocrResponse, err := h.scanService.ScanFile(ImageType, files, "", "")
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": err.Error(),
@@ -128,13 +124,14 @@ func (h *ReaderHandler) Scan(c *fiber.Ctx) error {
 }
 
 type StoreRequest struct {
-	Psid  string `json:"psid"`
-	Image string `json:"image"`
+	Psid         string `json:"psid"`
+	Image        string `json:"image"`
+	SerialNumber string `json:"serial_number"`
 }
 
 func (h *ReaderHandler) Store(c *fiber.Ctx) error {
 	token := c.Params("token")
-	data, err := validate(h.decodeService, h.scanService, token)
+	serials, err := validate(c.Context(), h.requestService, token)
 	if err != nil {
 		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
 			"error": "Invalid token",
@@ -148,16 +145,33 @@ func (h *ReaderHandler) Store(c *fiber.Ctx) error {
 		})
 	}
 
+	//  get serial number from user request
+	if !slices.Contains(serials, requestData.SerialNumber) {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "Serial number not in the valid serial numbers list",
+		})
+	}
+
+	hard, err := h.scanService.GetHardInfoByPsid(c.Context(), repositories.AddHardFilter{
+		SerialNumber: requestData.SerialNumber,
+		Psid:         requestData.Psid,
+	})
+
+	if err == nil && hard != nil {
+		return c.Status(fiber.StatusConflict).JSON(fiber.Map{
+			"error": "Hard with the same PSID and Serial Number already exists",
+		})
+	}
+
 	// check psid exit in requestData
 	psid := requestData.Psid
 	image := requestData.Image
 
 	hardData := services.AddHardResponse{
-		InventoryID:  data.InventoryID,
-		SerialNumber: data.SerialNumber,
+		SerialNumber: requestData.SerialNumber,
 		Psid:         psid,
 	}
-	// TODO : check not repeat psid
+
 	_, err = h.scanService.AddHard(c.Context(), hardData, []string{image})
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{

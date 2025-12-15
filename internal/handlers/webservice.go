@@ -23,12 +23,14 @@ import (
 )
 
 type WebServiceHandler struct {
-	ScanService *services.ScanService
+	ScanService    *services.ScanService
+	RequestService *services.RequestService
 }
 
-func NewWebServiceHandler(scanService *services.ScanService) *WebServiceHandler {
+func NewWebServiceHandler(scanService *services.ScanService, requestService *services.RequestService) *WebServiceHandler {
 	return &WebServiceHandler{
-		ScanService: scanService,
+		ScanService:    scanService,
+		RequestService: requestService,
 	}
 }
 
@@ -268,7 +270,7 @@ func (h *WebServiceHandler) GetInfo(c *fiber.Ctx) error {
 		})
 	}
 
-	hard, err := h.ScanService.GetHardInfo(c.Context(), req)
+	hards, err := h.ScanService.GetHardInfoByHardFilter(c.Context(), &req)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": fmt.Sprintf("Failed to get hard info: %v", err),
@@ -276,13 +278,18 @@ func (h *WebServiceHandler) GetInfo(c *fiber.Ctx) error {
 	}
 
 	cfg := config.GetConfig()
-	for index, image := range hard.Images {
-		hard.Images[index] = cfg.ServerConfig.BaseUrl + "/image/" + image
+	for idx, hard := range hards {
+		images := []string{}
+		for _, image := range hard.Images {
+			images = append(images, cfg.ServerConfig.BaseUrl+"/image/"+image)
+		}
+
+		hards[idx].Images = images
 	}
 
 	return c.JSON(fiber.Map{
 		"status":    "success",
-		"data":      hard,
+		"data":      hards,
 		"timestamp": time.Now(),
 	})
 }
@@ -299,9 +306,15 @@ func (h *WebServiceHandler) AddHard(c *fiber.Ctx) error {
 		})
 	}
 
+	if req.Psid == "" || req.SerialNumber == "" {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "Psid and SerialNumber are required",
+		})
+	}
+
 	//check if exit error
-	hard, err := h.ScanService.GetHardInfo(c.Context(), repositories.HardFilter{
-		Make:         req.Make,
+	hard, err := h.ScanService.GetHardInfoByPsid(c.Context(), repositories.AddHardFilter{
+		Psid:         req.Psid,
 		SerialNumber: req.SerialNumber,
 	})
 
@@ -326,6 +339,7 @@ func (h *WebServiceHandler) AddHard(c *fiber.Ctx) error {
 }
 
 func (h *WebServiceHandler) EditHard(c *fiber.Ctx) error {
+	hardID := c.Params("id")
 	var req services.EditHardResponse
 	if err := c.BodyParser(&req); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
@@ -333,31 +347,18 @@ func (h *WebServiceHandler) EditHard(c *fiber.Ctx) error {
 		})
 	}
 
-	make := ""
-	if req.Make != nil {
-		make = *req.Make
-	}
-
-	serialNumber := ""
-	if req.SerialNumber != nil {
-		serialNumber = *req.SerialNumber
-	}
-
-	hard, err := h.ScanService.GetHardInfo(c.Context(), repositories.HardFilter{
-		Make:         make,
-		SerialNumber: serialNumber,
-	})
-
+	hard, err := h.ScanService.GetHardInfo(c.Context(), hardID)
 	if err != nil || hard == nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error": fmt.Sprintf("Failed to get hard info: %v", err),
+			"error": "Hard not found",
 		})
 	}
 
+	// update
 	err = h.ScanService.UpdateHard(c.Context(), hard, req)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error": fmt.Sprintf("Failed to update hard info: %v", err),
+			"error": fmt.Sprintf("Failed to update hard: %v", err),
 		})
 	}
 
@@ -373,4 +374,97 @@ func (h *WebServiceHandler) EditHard(c *fiber.Ctx) error {
 		"data":      hard,
 		"timestamp": time.Now(),
 	})
+}
+
+type VipeAcceptRequest struct {
+	SerialNumber string `json:"serial_number" form:"serial_number"`
+	Psid         string `json:"psid" form:"psid"`
+}
+
+func (h *WebServiceHandler) VipeAccept(c *fiber.Ctx) error {
+	var req VipeAcceptRequest
+	if err := c.BodyParser(&req); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": fmt.Sprintf("Failed to parse request body: %v", err),
+		})
+	}
+
+	err := h.ScanService.VipeAccept(c.Context(), req.SerialNumber, req.Psid)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": fmt.Sprintf("Failed to process vipe accept: %v", err),
+		})
+	}
+
+	return c.JSON(fiber.Map{
+		"status":    "success",
+		"message":   "Vipe accept processed successfully",
+		"timestamp": time.Now(),
+	})
+}
+
+type GeneratePsidUrlRequest struct {
+	SerialNumbers []string `json:"serial_numbers" form:"serial_numbers"`
+}
+
+func (h *WebServiceHandler) GeneratePsidUrl(c *fiber.Ctx) error {
+	var req GeneratePsidUrlRequest
+	if err := c.BodyParser(&req); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": fmt.Sprintf("Failed to parse request body: %v", err),
+		})
+	}
+
+	psidUrl, err := h.RequestService.CreateRequest(c.Context(), req.SerialNumbers)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": fmt.Sprintf("Failed to generate PSID URLs: %v", err),
+		})
+	}
+
+	return c.JSON(fiber.Map{
+		"status":     "success",
+		"request_id": psidUrl.UUid,
+		"timestamp":  time.Now(),
+	})
+}
+
+type DeletePsidRequest struct {
+	SerialNumber string `json:"serial_number" form:"serial_number"`
+	Psid         string `json:"psid" form:"psid"`
+}
+
+func (h *WebServiceHandler) DeletePsid(c *fiber.Ctx) error {
+	var req DeletePsidRequest
+	if err := c.BodyParser(&req); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": fmt.Sprintf("Failed to parse request body: %v", err),
+		})
+	}
+
+	hard, err := h.ScanService.GetHardInfoByPsid(c.Context(), repositories.AddHardFilter{
+		SerialNumber: req.SerialNumber,
+		Psid:         req.Psid,
+	})
+
+	if err != nil || hard == nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "Hard not found",
+		})
+	}
+
+	// update
+	err = h.ScanService.DeletePsid(c.Context(), hard)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": fmt.Sprintf("Failed to delete psid: %v", err),
+		})
+	}
+
+	return c.JSON(fiber.Map{
+		"status":    "success",
+		"message":   "Psid deleted successfully",
+		"timestamp": time.Now(),
+	})
+
 }

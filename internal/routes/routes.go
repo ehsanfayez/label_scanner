@@ -111,12 +111,13 @@ func SetupRoutes(app *fiber.App, config *config.Config, oAuthMiddleware fiber.Ha
 	dataHandler := handlers.NewDataHandler()
 	app.Post("/api/done", oAuthMiddleware, dataHandler.Done)
 	scanService := services.NewScanService()
-	SetupWebServicesRoutes(app, config, scanService)
-	SetupReaderRoutes(app, scanService)
+	requestService := services.NewRequestService()
+	SetupWebServicesRoutes(app, config, scanService, requestService)
+	SetupReaderRoutes(app, scanService, requestService)
 }
 
-func SetupWebServicesRoutes(app *fiber.App, config *config.Config, scanService *services.ScanService) {
-	webServiceHandler := handlers.NewWebServiceHandler(scanService)
+func SetupWebServicesRoutes(app *fiber.App, config *config.Config, scanService *services.ScanService, requestService *services.RequestService) {
+	webServiceHandler := handlers.NewWebServiceHandler(scanService, requestService)
 	webserviceMiddleware := middlewares.WebserviceMiddleware()
 	app.Get("/api/webservice/health", webserviceMiddleware, webServiceHandler.HealthCheck)
 	app.Post("/api/webservice/scan", webserviceMiddleware, webServiceHandler.Scan)
@@ -124,11 +125,15 @@ func SetupWebServicesRoutes(app *fiber.App, config *config.Config, scanService *
 	app.Get("/api/webservice/hards", webserviceMiddleware, webServiceHandler.GetInfo)
 	app.Get("/image/:filename", webServiceHandler.GetImage)
 	app.Post("/api/webservice/hards", webserviceMiddleware, webServiceHandler.AddHard)
-	app.Put("/api/webservice/hards", webserviceMiddleware, webServiceHandler.EditHard)
+	app.Put("/api/webservice/hards/:id", webserviceMiddleware, webServiceHandler.EditHard)
+	app.Post("/api/webservice/hards/vipe_accept", webserviceMiddleware, webServiceHandler.VipeAccept)
+
+	app.Post("/api/webservice/hards/link", webserviceMiddleware, webServiceHandler.GeneratePsidUrl)
+	app.Delete("/api/webservice/hards", webserviceMiddleware, webServiceHandler.DeletePsid)
 }
 
-func SetupReaderRoutes(app *fiber.App, scanService *services.ScanService) {
-	readerHandler := handlers.NewReaderHandler(scanService)
+func SetupReaderRoutes(app *fiber.App, scanService *services.ScanService, requestService *services.RequestService) {
+	readerHandler := handlers.NewReaderHandler(scanService, requestService)
 	app.Get("/api/reader/validate/:token", readerHandler.Validate)
 	app.Post("/api/reader/scan/:token", readerHandler.Scan)
 	app.Post("/api/reader/store/:token", readerHandler.Store)

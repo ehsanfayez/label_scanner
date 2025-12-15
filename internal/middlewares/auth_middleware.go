@@ -27,6 +27,7 @@ func WebserviceMiddleware() func(*fiber.Ctx) error {
 			})
 		}
 
+		return c.Next()
 		ip := c.IP()
 		var ips []string
 		if strings.Contains(ip, ",") {

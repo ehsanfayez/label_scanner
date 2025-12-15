@@ -177,7 +177,7 @@ func (s *ScanService) Scan(ImageType string, base64Images []string, Sender strin
 
 func (s *ScanService) StoreScanResultIfNotExists(ctx context.Context, ocrResponse *OCRResponse, images []string, inventoryId string) (*repositories.Hard, error) {
 	serialNumber := ""
-	makeValue := ""
+	psidValue := ""
 
 	if val, ok := ocrResponse.Data["serial_number"]; ok {
 		if valStr, ok := val.(string); ok {
@@ -185,15 +185,15 @@ func (s *ScanService) StoreScanResultIfNotExists(ctx context.Context, ocrRespons
 		}
 	}
 
-	if val, ok := ocrResponse.Data["make"]; ok {
+	if val, ok := ocrResponse.Data["psid"]; ok {
 		if valStr, ok := val.(string); ok {
-			makeValue = valStr
+			psidValue = valStr
 		}
 	}
 
-	existingHard, err := s.hardRepo.FindByInput(ctx, repositories.HardFilter{
+	existingHard, err := s.hardRepo.FindByPsid(ctx, repositories.AddHardFilter{
 		SerialNumber: serialNumber,
-		Make:         makeValue,
+		Psid:         psidValue,
 	})
 
 	if err != nil && err.Error() != "mongo: no documents in result" {
@@ -211,11 +211,11 @@ func (s *ScanService) StoreScanResultIfNotExists(ctx context.Context, ocrRespons
 		Eui:          "",
 		Type:         "",
 		InventoryID:  inventoryId,
-		Make:         makeValue,
+		Make:         "",
 		Model:        "",
 		PartNumber:   "",
 		SerialNumber: serialNumber,
-		Psid:         "",
+		Psid:         psidValue,
 		ExtraFileds:  make(map[string]interface{}),
 		Images:       images,
 	}
@@ -235,6 +235,8 @@ func (s *ScanService) StoreScanResultIfNotExists(ctx context.Context, ocrRespons
 			newHard.Type = valStr
 		case "model":
 			newHard.Model = valStr
+		case "make":
+			newHard.Make = valStr
 		case "part_number":
 			newHard.PartNumber = valStr
 		case "psid":
@@ -256,8 +258,30 @@ func (s *ScanService) StoreScanResultIfNotExists(ctx context.Context, ocrRespons
 	return newHard, nil
 }
 
-func (s *ScanService) GetHardInfo(ctx context.Context, filter repositories.HardFilter) (*repositories.Hard, error) {
-	hard, err := s.hardRepo.FindByInput(ctx, filter)
+func (s *ScanService) GetHardInfoByHardFilter(ctx context.Context, filter *repositories.HardFilter) ([]repositories.Hard, error) {
+	hards, err := s.hardRepo.FindByInput(ctx, filter)
+	if err != nil {
+		return nil, err
+	}
+
+	return hards, nil
+}
+
+func (s *ScanService) GetHardInfo(ctx context.Context, id string) (*repositories.Hard, error) {
+	hard, err := s.hardRepo.FindByID(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+
+	return hard, nil
+}
+
+func (s *ScanService) DeletePsid(ctx context.Context, hard *repositories.Hard) error {
+	return s.hardRepo.DeleteByPsid(ctx, hard)
+}
+
+func (s *ScanService) GetHardInfoByPsid(ctx context.Context, filter repositories.AddHardFilter) (*repositories.Hard, error) {
+	hard, err := s.hardRepo.FindByPsid(ctx, filter)
 	if err != nil {
 		return nil, err
 	}
@@ -350,5 +374,21 @@ func (s *ScanService) UpdateHard(ctx context.Context, hard *repositories.Hard, d
 		hard.Psid = *data.Psid
 	}
 
+	hard.UserEdited = true
+
 	return s.hardRepo.Update(ctx, hard.ID.Hex(), hard)
+}
+
+func (s *ScanService) VipeAccept(ctx context.Context, serialNumber, psid string) error {
+	hard, err := s.hardRepo.FindByPsid(ctx, repositories.AddHardFilter{
+		SerialNumber: serialNumber,
+		Psid:         psid,
+	})
+
+	if err != nil && err.Error() != "mongo: no documents in result" {
+		return err
+	}
+
+	hard.VipeAccepted = true
+	return s.hardRepo.VipeAccepted(ctx, hard)
 }

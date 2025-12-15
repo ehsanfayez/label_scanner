@@ -5,8 +5,10 @@ import (
 	"fmt"
 	"scanner/databases"
 
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 var MainKeys = []string{
@@ -22,18 +24,21 @@ var MainKeys = []string{
 }
 
 type Hard struct {
-	ID           primitive.ObjectID     `bson:"_id,omitempty" json:"id"`
-	Capacity     string                 `bson:"capacity" json:"capacity"`
-	Eui          string                 `bson:"eui" json:"eui"`
-	Type         string                 `bson:"type" json:"hard_type"`
-	InventoryID  string                 `bson:"inventory_id" json:"inventory_id"`
-	Make         string                 `bson:"make" json:"make"`
-	Model        string                 `bson:"model" json:"model"`
-	PartNumber   string                 `bson:"part_number" json:"part_number"`
-	SerialNumber string                 `bson:"serial_number" json:"serial_number"`
-	Psid         string                 `bson:"psid" json:"psid"`
-	ExtraFileds  map[string]interface{} `bson:"extra_fields" json:"extra_fields"`
-	Images       []string               `bson:"images,omitempty" json:"images,omitempty"`
+	ID            primitive.ObjectID     `bson:"_id,omitempty" json:"id"`
+	Capacity      string                 `bson:"capacity" json:"capacity"`
+	Eui           string                 `bson:"eui" json:"eui"`
+	Type          string                 `bson:"type" json:"hard_type"`
+	InventoryID   string                 `bson:"inventory_id" json:"inventory_id"`
+	Make          string                 `bson:"make" json:"make"`
+	Model         string                 `bson:"model" json:"model"`
+	PartNumber    string                 `bson:"part_number" json:"part_number"`
+	SerialNumber  string                 `bson:"serial_number" json:"serial_number"`
+	Psid          string                 `bson:"psid" json:"psid"`
+	ExtraFileds   map[string]interface{} `bson:"extra_fields" json:"extra_fields"`
+	Images        []string               `bson:"images" json:"images"`
+	VipeAccepted  bool                   `bson:"vipe_accepted" json:"vipe_accepted"`
+	UserEdited    bool                   `bson:"user_edited" json:"user_edited"`
+	IncorrectPsid bool                   `bson:"incorrect_psid" json:"-"`
 }
 
 type HardRepository struct {
@@ -49,11 +54,16 @@ func NewHardRepository() *HardRepository {
 type HardFilter struct {
 	SerialNumber string `json:"serial_number" form:"serial_number"`
 	Make         string `json:"make" form:"make"`
-	// InventoryID  string `json:"inventory_id" form:"inventory_id"`
+	InventoryID  string `json:"inventory_id" form:"inventory_id"`
 }
 
-func (r *HardRepository) FindByInput(ctx context.Context, data HardFilter) (*Hard, error) {
-	var hard Hard
+type AddHardFilter struct {
+	SerialNumber string `json:"serial_number" form:"serial_number"`
+	Psid         string `json:"psid" form:"psid"`
+}
+
+func (r *HardRepository) FindByInput(ctx context.Context, data *HardFilter) ([]Hard, error) {
+	hards := []Hard{}
 	filer := make(map[string]interface{})
 	if data.SerialNumber != "" {
 		filer["serial_number"] = data.SerialNumber
@@ -63,26 +73,94 @@ func (r *HardRepository) FindByInput(ctx context.Context, data HardFilter) (*Har
 		filer["make"] = data.Make
 	}
 
+	if data.InventoryID != "" {
+		filer["inventory_id"] = data.InventoryID
+	}
+
 	if data.Make == "" && data.SerialNumber == "" {
 		return nil, fmt.Errorf("serial number must be provided")
 	}
 
-	err := r.collection.FindOne(ctx, filer).Decode(&hard)
+	// Filter out records with incorrect_psid = false
+	filer["incorrect_psid"] = bson.M{"$ne": true}
+
+	// each record has vipe_accepted = true shoud be upper then records with user_edited = true then other records
+	findOptions := options.Find().SetSort(bson.D{
+		{Key: "vipe_accepted", Value: -1},
+		{Key: "user_edited", Value: -1},
+	})
+
+	cursor, err := r.collection.Find(ctx, filer, findOptions)
 	if err != nil {
 		return nil, err
 	}
 
-	// if data.InventoryID != "" {
-	// 	err := r.collection.FindOne(ctx, map[string]interface{}{
-	// 		"inventory_id": data.InventoryID,
-	// 	}).Decode(&hard)
+	err = cursor.All(ctx, &hards)
+	if err != nil {
+		return nil, err
+	}
 
-	// 	if err != nil {
-	// 		return nil, err
-	// 	}
-	// }
+	return hards, nil
+}
 
-	return &hard, nil
+func (r *HardRepository) FindByID(ctx context.Context, id string) (*Hard, error) {
+	hard := &Hard{}
+	objID, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		return nil, err
+	}
+
+	err = r.collection.FindOne(ctx, map[string]interface{}{
+		"_id": objID,
+	}).Decode(&hard)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return hard, nil
+}
+
+func (r *HardRepository) FindByPsid(ctx context.Context, data AddHardFilter) (*Hard, error) {
+	hard := &Hard{}
+	filter := make(map[string]interface{})
+	if data.Psid != "" {
+		filter["psid"] = data.Psid
+	}
+
+	if data.SerialNumber != "" {
+		filter["serial_number"] = data.SerialNumber
+	}
+
+	if data.Psid == "" && data.SerialNumber == "" {
+		return nil, fmt.Errorf("psid or serial number must be provided")
+	}
+
+	err := r.collection.FindOne(ctx, filter).Decode(&hard)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return hard, nil
+}
+
+func (r *HardRepository) VipeAccepted(ctx context.Context, hard *Hard) error {
+	update := map[string]interface{}{
+		"$set": map[string]interface{}{
+			"vipe_accepted": true,
+		},
+	}
+
+	_, err := r.collection.UpdateOne(ctx, map[string]interface{}{
+		"_id": hard.ID,
+	}, update)
+
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (r *HardRepository) Insert(ctx context.Context, hard *Hard) error {
@@ -102,4 +180,22 @@ func (r *HardRepository) Update(ctx context.Context, id string, hard *Hard) erro
 
 	_, err = r.collection.UpdateByID(ctx, objID, update)
 	return err
+}
+
+func (r *HardRepository) DeleteByPsid(ctx context.Context, hard *Hard) error {
+	update := map[string]interface{}{
+		"$set": map[string]interface{}{
+			"incorrect_psid": true,
+		},
+	}
+
+	_, err := r.collection.UpdateOne(ctx, map[string]interface{}{
+		"_id": hard.ID,
+	}, update)
+
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
