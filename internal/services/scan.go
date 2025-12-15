@@ -379,7 +379,7 @@ func (s *ScanService) UpdateHard(ctx context.Context, hard *repositories.Hard, d
 	return s.hardRepo.Update(ctx, hard.ID.Hex(), hard)
 }
 
-func (s *ScanService) VipeAccept(ctx context.Context, serialNumber, psid string) error {
+func (s *ScanService) WipeAccept(ctx context.Context, serialNumber, psid string) error {
 	hard, err := s.hardRepo.FindByPsid(ctx, repositories.AddHardFilter{
 		SerialNumber: serialNumber,
 		Psid:         psid,
@@ -389,6 +389,6 @@ func (s *ScanService) VipeAccept(ctx context.Context, serialNumber, psid string)
 		return err
 	}
 
-	hard.VipeAccepted = true
-	return s.hardRepo.VipeAccepted(ctx, hard)
+	hard.WipeAccepted = true
+	return s.hardRepo.WipeAccepted(ctx, hard)
 }

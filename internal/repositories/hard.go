@@ -36,7 +36,7 @@ type Hard struct {
 	Psid          string                 `bson:"psid" json:"psid"`
 	ExtraFileds   map[string]interface{} `bson:"extra_fields" json:"extra_fields"`
 	Images        []string               `bson:"images" json:"images"`
-	VipeAccepted  bool                   `bson:"vipe_accepted" json:"vipe_accepted"`
+	WipeAccepted  bool                   `bson:"vipe_accepted" json:"wipe_accepted"`
 	UserEdited    bool                   `bson:"user_edited" json:"user_edited"`
 	IncorrectPsid bool                   `bson:"incorrect_psid" json:"-"`
 }
@@ -145,7 +145,7 @@ func (r *HardRepository) FindByPsid(ctx context.Context, data AddHardFilter) (*H
 	return hard, nil
 }
 
-func (r *HardRepository) VipeAccepted(ctx context.Context, hard *Hard) error {
+func (r *HardRepository) WipeAccepted(ctx context.Context, hard *Hard) error {
 	update := map[string]interface{}{
 		"$set": map[string]interface{}{
 			"vipe_accepted": true,

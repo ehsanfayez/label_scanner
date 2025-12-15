@@ -376,20 +376,20 @@ func (h *WebServiceHandler) EditHard(c *fiber.Ctx) error {
 	})
 }
 
-type VipeAcceptRequest struct {
+type WipeAcceptRequest struct {
 	SerialNumber string `json:"serial_number" form:"serial_number"`
 	Psid         string `json:"psid" form:"psid"`
 }
 
-func (h *WebServiceHandler) VipeAccept(c *fiber.Ctx) error {
-	var req VipeAcceptRequest
+func (h *WebServiceHandler) WipeAccept(c *fiber.Ctx) error {
+	var req WipeAcceptRequest
 	if err := c.BodyParser(&req); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"error": fmt.Sprintf("Failed to parse request body: %v", err),
 		})
 	}
 
-	err := h.ScanService.VipeAccept(c.Context(), req.SerialNumber, req.Psid)
+	err := h.ScanService.WipeAccept(c.Context(), req.SerialNumber, req.Psid)
 	if err != nil {
 		fmt.Println(err.Error())
 		if strings.Contains(err.Error(), "no documents in result") {

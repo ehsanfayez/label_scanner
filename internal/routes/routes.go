@@ -126,7 +126,7 @@ func SetupWebServicesRoutes(app *fiber.App, config *config.Config, scanService *
 	app.Get("/image/:filename", webServiceHandler.GetImage)
 	app.Post("/api/webservice/hards", webserviceMiddleware, webServiceHandler.AddHard)
 	app.Put("/api/webservice/hards/:id", webserviceMiddleware, webServiceHandler.EditHard)
-	app.Post("/api/webservice/hards/vipe_accept", webserviceMiddleware, webServiceHandler.VipeAccept)
+	app.Post("/api/webservice/hards/wipe_accept", webserviceMiddleware, webServiceHandler.WipeAccept)
 
 	app.Post("/api/webservice/hards/link", webserviceMiddleware, webServiceHandler.GeneratePsidUrl)
 	app.Delete("/api/webservice/hards", webserviceMiddleware, webServiceHandler.DeletePsid)
