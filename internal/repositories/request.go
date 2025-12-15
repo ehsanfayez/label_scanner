@@ -75,3 +75,19 @@ func (r *RequestRepo) UpdatePsidStore(ctx context.Context, uuid string, serialNu
 
 	return nil
 }
+
+func (r *RequestRepo) FindBySerials(ctx context.Context, serialNumbers []string) (*Request, error) {
+	request := &Request{}
+	filter := bson.M{
+		"serial_numbers.serial_number": bson.M{
+			"$all": serialNumbers,
+		},
+	}
+
+	err := r.collection.FindOne(ctx, filter).Decode(request)
+	if err != nil {
+		return nil, err
+	}
+
+	return request, nil
+}

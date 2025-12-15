@@ -17,6 +17,10 @@ func NewRequestService() *RequestService {
 	}
 }
 
+func (r *RequestService) FindExistingSerialNumbers(ctx context.Context, serialNumbers []string) (*repositories.Request, error) {
+	return r.requestRepo.FindBySerials(ctx, serialNumbers)
+}
+
 func (r *RequestService) CreateRequest(ctx context.Context, serialNumbers []string) (*repositories.Request, error) {
 	request := &repositories.Request{
 		SerialNumbers: []repositories.SerialCondition{},

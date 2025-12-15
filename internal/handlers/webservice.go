@@ -422,6 +422,21 @@ func (h *WebServiceHandler) GeneratePsidUrl(c *fiber.Ctx) error {
 		})
 	}
 
+	request, err := h.RequestService.FindExistingSerialNumbers(c.Context(), req.SerialNumbers)
+	if err != nil && err.Error() != "mongo: no documents in result" {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "Failed to check existing serial numbers",
+		})
+	}
+
+	if request != nil {
+		return c.JSON(fiber.Map{
+			"status":     "success",
+			"request_id": request.UUid,
+			"timestamp":  time.Now(),
+		})
+	}
+
 	psidUrl, err := h.RequestService.CreateRequest(c.Context(), req.SerialNumbers)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
