@@ -262,7 +262,7 @@ func (h *WebServiceHandler) GetImage(c *fiber.Ctx) error {
 
 func (h *WebServiceHandler) GetInfo(c *fiber.Ctx) error {
 	var req repositories.HardFilter
-	if err := c.QueryParser(&req); err != nil {
+	if err := c.BodyParser(&req); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"error": fmt.Sprintf("Failed to parse query parameters: %v", err),
 		})
