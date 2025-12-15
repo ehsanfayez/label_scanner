@@ -385,7 +385,7 @@ func (s *ScanService) VipeAccept(ctx context.Context, serialNumber, psid string)
 		Psid:         psid,
 	})
 
-	if err != nil && err.Error() != "mongo: no documents in result" {
+	if err != nil {
 		return err
 	}
 
