@@ -30,16 +30,16 @@ func NewReaderHandler(scanService *services.ScanService, requestService *service
 }
 
 func validate(ctx context.Context, requestService *services.RequestService, token string) ([]string, error) {
-	request, err := requestService.GetRequestByID(ctx, token)
-	if err != nil || request == nil {
+	serials, err := requestService.GetRequestByID(ctx, token)
+	if err != nil {
 		return nil, fmt.Errorf("invalid token")
 	}
 
-	if len(request.SerialNumbers) == 0 {
+	if len(serials) == 0 {
 		return nil, fmt.Errorf("invalid token")
 	}
 
-	return request.SerialNumbers, nil
+	return serials, nil
 }
 
 func (h *ReaderHandler) Validate(c *fiber.Ctx) error {
@@ -160,6 +160,13 @@ func (h *ReaderHandler) Store(c *fiber.Ctx) error {
 	if err == nil && hard != nil {
 		return c.Status(fiber.StatusConflict).JSON(fiber.Map{
 			"error": "Hard with the same PSID and Serial Number already exists",
+		})
+	}
+
+	err = h.requestService.UpdatePsidStore(c.Context(), token, requestData.SerialNumber)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "Failed to store psid",
 		})
 	}
 

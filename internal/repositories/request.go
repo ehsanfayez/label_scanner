@@ -11,9 +11,14 @@ type RequestRepo struct {
 	collection *mongo.Collection
 }
 
+type SerialCondition struct {
+	SerialNumber string `bson:"serial_number"`
+	PsidStore    bool   `bson:"psid_store"`
+}
+
 type Request struct {
-	SerialNumbers []string `bson:"serial_number" json:"serial_number"`
-	UUid          string   `bson:"uuid" json:"uuid"`
+	SerialNumbers []SerialCondition `bson:"serial_number" json:"serial_number"`
+	UUid          string            `bson:"uuid" json:"uuid"`
 }
 
 func NewRequestRepo() *RequestRepo {
@@ -43,4 +48,24 @@ func (r *RequestRepo) FindByID(ctx context.Context, uuid string) (*Request, erro
 	}
 
 	return request, nil
+}
+
+func (r *RequestRepo) UpdatePsidStore(ctx context.Context, uuid string, serialNumber string) error {
+	filter := map[string]interface{}{
+		"uuid":                         uuid,
+		"serial_numbers.serial_number": serialNumber,
+	}
+
+	update := map[string]interface{}{
+		"$set": map[string]interface{}{
+			"serial_numbers.$.psid_store": true,
+		},
+	}
+
+	_, err := r.collection.UpdateOne(ctx, filter, update)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
