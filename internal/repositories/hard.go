@@ -2,6 +2,7 @@ package repositories
 
 import (
 	"context"
+	"fmt"
 	"scanner/databases"
 
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -60,6 +61,10 @@ func (r *HardRepository) FindByInput(ctx context.Context, data HardFilter) (*Har
 
 	if data.Make != "" {
 		filer["make"] = data.Make
+	}
+
+	if data.Make == "" && data.SerialNumber == "" {
+		return nil, fmt.Errorf("serial number must be provided")
 	}
 
 	err := r.collection.FindOne(ctx, filer).Decode(&hard)
