@@ -391,8 +391,15 @@ func (h *WebServiceHandler) VipeAccept(c *fiber.Ctx) error {
 
 	err := h.ScanService.VipeAccept(c.Context(), req.SerialNumber, req.Psid)
 	if err != nil {
+		fmt.Println(err.Error())
+		if strings.Contains(err.Error(), "no documents in result") {
+			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
+				"error": "Hard not found",
+			})
+		}
+
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error": fmt.Sprintf("Failed to process vipe accept: %v", err),
+			"error": "Failed to process vipe accept",
 		})
 	}
 
