@@ -391,13 +391,6 @@ func (h *WebServiceHandler) WipeAccept(c *fiber.Ctx) error {
 
 	err := h.ScanService.WipeAccept(c.Context(), req.SerialNumber, req.Psid)
 	if err != nil {
-		fmt.Println(err.Error())
-		if strings.Contains(err.Error(), "no documents in result") {
-			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
-				"error": "Hard not found",
-			})
-		}
-
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": "Failed to process Wipe accept",
 		})

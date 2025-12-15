@@ -386,6 +386,23 @@ func (s *ScanService) WipeAccept(ctx context.Context, serialNumber, psid string)
 	})
 
 	if err != nil {
+		if err.Error() == "mongo: no documents in result" {
+			newHard := &repositories.Hard{
+				ID:           primitive.NewObjectID(),
+				SerialNumber: serialNumber,
+				Psid:         psid,
+				ExtraFileds:  make(map[string]interface{}),
+				WipeAccepted: true,
+			}
+
+			err := s.hardRepo.Insert(ctx, newHard)
+			if err != nil {
+				return err
+			}
+
+			return nil
+		}
+
 		return err
 	}
 
