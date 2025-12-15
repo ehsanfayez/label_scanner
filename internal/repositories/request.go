@@ -2,8 +2,10 @@ package repositories
 
 import (
 	"context"
+	"errors"
 	"scanner/databases"
 
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
@@ -17,7 +19,7 @@ type SerialCondition struct {
 }
 
 type Request struct {
-	SerialNumbers []SerialCondition `bson:"serial_number" json:"serial_number"`
+	SerialNumbers []SerialCondition `bson:"serial_numbers" json:"serial_numbers"`
 	UUid          string            `bson:"uuid" json:"uuid"`
 }
 
@@ -51,20 +53,24 @@ func (r *RequestRepo) FindByID(ctx context.Context, uuid string) (*Request, erro
 }
 
 func (r *RequestRepo) UpdatePsidStore(ctx context.Context, uuid string, serialNumber string) error {
-	filter := map[string]interface{}{
+	filter := bson.M{
 		"uuid":                         uuid,
 		"serial_numbers.serial_number": serialNumber,
 	}
 
-	update := map[string]interface{}{
-		"$set": map[string]interface{}{
+	update := bson.M{
+		"$set": bson.M{
 			"serial_numbers.$.psid_store": true,
 		},
 	}
 
-	_, err := r.collection.UpdateOne(ctx, filter, update)
+	res, err := r.collection.UpdateOne(ctx, filter, update)
 	if err != nil {
 		return err
+	}
+
+	if res.MatchedCount == 0 {
+		return errors.New("no document matched the filter")
 	}
 
 	return nil
