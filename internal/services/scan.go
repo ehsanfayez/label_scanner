@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"io"
 	"mime/multipart"
+	"net"
 	"net/http"
 	"net/url"
 	"scanner/config"
@@ -71,9 +72,20 @@ func (s *ScanService) Scan(ImageType string, base64Images []string, Sender strin
 	// add proxy to ocr api
 
 	cfg := config.GetConfig()
+
+	// Force IPv4 by using custom dialer
+	dialer := &net.Dialer{
+		Timeout:   30 * time.Second,
+		KeepAlive: 30 * time.Second,
+	}
+
 	httpClient := &http.Client{
-		Transport: &http.Transport{},
-		Timeout:   120 * time.Second,
+		Transport: &http.Transport{
+			DialContext: func(ctx context.Context, network, addr string) (net.Conn, error) {
+				return dialer.DialContext(ctx, "tcp4", addr)
+			},
+		},
+		Timeout: 120 * time.Second,
 	}
 
 	if cfg.ServerConfig.ProxyScan {
@@ -84,6 +96,9 @@ func (s *ScanService) Scan(ImageType string, base64Images []string, Sender strin
 
 		httpClient.Transport = &http.Transport{
 			Proxy: http.ProxyURL(proxyUrl),
+			DialContext: func(ctx context.Context, network, addr string) (net.Conn, error) {
+				return dialer.DialContext(ctx, "tcp4", addr)
+			},
 		}
 	}
 
