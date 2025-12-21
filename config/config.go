@@ -33,6 +33,7 @@ type ServerConfig struct {
 	Proxy     string
 	BaseUrl   string
 	SecretKey string
+	ProxyScan bool
 }
 
 type AuthConfig struct {
@@ -86,6 +87,7 @@ func InitConfig() *Config {
 			Proxy:     viper.GetString("PROXY_URL"),
 			BaseUrl:   viper.GetString("BASE_URL"),
 			SecretKey: viper.GetString("SECRET_KEY"),
+			ProxyScan: viper.GetBool("PROXY_SCAN"),
 		}
 
 		mongoDB := &MongoDB{

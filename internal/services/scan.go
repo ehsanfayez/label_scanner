@@ -69,14 +69,22 @@ func (s *ScanService) ScanFile(ImageType string, files []*multipart.FileHeader, 
 func (s *ScanService) Scan(ImageType string, base64Images []string, Sender string, InventoryId string) (*OCRResponse, error) {
 	ocrApi := config.GetConfig().OCRConfig.APIURL + "/scan"
 	// add proxy to ocr api
-	proxyUrl, err := url.Parse(config.GetConfig().ServerConfig.Proxy)
-	if err != nil {
-		return nil, errors.New("failed to parse proxy url")
+
+	cfg := config.GetConfig()
+	httpClient := &http.Client{
+		Transport: &http.Transport{},
+		Timeout:   120 * time.Second,
 	}
 
-	httpClient := &http.Client{
-		Transport: &http.Transport{Proxy: http.ProxyURL(proxyUrl)},
-		Timeout:   120 * time.Second,
+	if cfg.ServerConfig.ProxyScan {
+		proxyUrl, err := url.Parse(config.GetConfig().ServerConfig.Proxy)
+		if err != nil {
+			return nil, errors.New("failed to parse proxy url")
+		}
+
+		httpClient.Transport = &http.Transport{
+			Proxy: http.ProxyURL(proxyUrl),
+		}
 	}
 
 	data := map[string]interface{}{
@@ -106,9 +114,12 @@ func (s *ScanService) Scan(ImageType string, base64Images []string, Sender strin
 		return nil, errors.New("failed to scan image")
 	}
 
+	fmt.Println(resp.StatusCode)
+
 	defer resp.Body.Close()
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
+		fmt.Println(err)
 		return nil, errors.New("failed to read response")
 	}
 
@@ -118,6 +129,8 @@ func (s *ScanService) Scan(ImageType string, base64Images []string, Sender strin
 		fmt.Println(err)
 		return nil, errors.New("failed to unmarshal response")
 	}
+
+	fmt.Printf("ocr response: %+v\n", ocrResponse)
 
 	if Sender == "scanner" {
 		for key, value := range ocrResponse.Data {
