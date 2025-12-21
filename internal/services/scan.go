@@ -68,10 +68,10 @@ func (s *ScanService) ScanFile(ImageType string, files []*multipart.FileHeader, 
 }
 
 func (s *ScanService) Scan(ImageType string, base64Images []string, Sender string, InventoryId string) (*OCRResponse, error) {
-	ocrApi := config.GetConfig().OCRConfig.APIURL + "/scan"
-	// add proxy to ocr api
-
 	cfg := config.GetConfig()
+	ocrApi := cfg.OCRConfig.APIURL + "/scan"
+	fmt.Println(ocrApi)
+	// add proxy to ocr api
 
 	// Force IPv4 by using custom dialer
 	dialer := &net.Dialer{
@@ -89,7 +89,7 @@ func (s *ScanService) Scan(ImageType string, base64Images []string, Sender strin
 	}
 
 	if cfg.ServerConfig.ProxyScan {
-		proxyUrl, err := url.Parse(config.GetConfig().ServerConfig.Proxy)
+		proxyUrl, err := url.Parse(cfg.ServerConfig.Proxy)
 		if err != nil {
 			return nil, errors.New("failed to parse proxy url")
 		}
@@ -119,10 +119,12 @@ func (s *ScanService) Scan(ImageType string, base64Images []string, Sender strin
 
 	req, err := http.NewRequest("POST", ocrApi, bytes.NewBuffer(dataBytes))
 	if err != nil {
+		fmt.Println(err)
 		return nil, errors.New("failed to create request")
 	}
 
-	req.Header.Set(config.GetConfig().OCRConfig.APIHeader, config.GetConfig().OCRConfig.APIKey)
+	req.Header.Set(cfg.OCRConfig.APIHeader, cfg.OCRConfig.APIKey)
+	fmt.Println(cfg.OCRConfig.APIHeader, cfg.OCRConfig.APIKey)
 	resp, err := httpClient.Do(req)
 	if err != nil {
 		fmt.Println(err)
